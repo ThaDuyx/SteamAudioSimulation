@@ -1,0 +1,158 @@
+using SteamAudio;
+using UnityEngine;
+
+public class SimulationManager : MonoBehaviour
+{
+    // Singleton object
+    public static SimulationManager Instance { get; private set; }
+
+    [SerializeField]
+    private AudioListener mainListener;
+    private AudioSource[] audioSources;
+    private SteamAudioManager steamAudioManager;
+    private Recorder recorder;
+    private Timer timer;
+
+    private bool _isRendering;
+    private readonly float simulationLength = 8.0f;
+
+    // Basic Unity MonoBehaviour method - Lifecycle process
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this);
+        }
+        else 
+        {
+            Instance = this;
+        }
+    }
+
+    // Basic Unity MonoBehaviour method - Essentially a start-up function / Constructor of the class
+    void Start()
+    {
+        SteamAudioManager[] steamAudioManagers = FindObjectsOfType<SteamAudioManager>();
+        steamAudioManager = steamAudioManagers[0];
+
+        recorder = new Recorder(UnityEngine.AudioSettings.outputSampleRate);
+        timer = gameObject.AddComponent<Timer>();
+
+        audioSources = FindObjectsOfType<AudioSource>();
+    }
+
+    // Start rendering process
+    public void StartRendering()
+    {
+        _isRendering = true;
+        ResetAudioSources();
+        //UpdateHRTF();
+        ToggleRecording();
+        timer.Begin(simulationLength);
+    }
+
+    // Updates the state to continue rendering with the next HRTF in the list
+    public void ContinueRendering()
+    {
+        ResetAudioSources();
+
+        ToggleRecording();      // Stop previous recording
+        UpdateHRTF();           // Select next HRTF
+        ToggleRecording();      // Start recording the next
+
+        timer.Begin(simulationLength);
+    }
+
+    // Stop rendering process
+    public void StopRendering()
+    {
+        _isRendering = false;
+        steamAudioManager.currentHRTF = 0;
+        timer.Stop();
+        recorder.StopRecording();
+        
+    }
+
+    // Record in-game audio
+    private void ToggleRecording()
+    {
+        if (recorder.IsRecording())
+        {
+            recorder.StopRecording();
+        }
+        else
+        {
+            recorder.StartRecording(CurrentHRTFName());
+        }
+    }
+
+    // Used by the AudioCapturer class in conjunction with OnAudioFilterRead() which is a MonoBehavior class that needs an AudioSource.
+    // This method binds the Recorder class together with the Audio.
+    public void TransmitData(float[] data)
+    {
+        if (IsRecorderInitialised() && _isRendering) {
+            recorder.ConvertAndWrite(data);
+        }
+    }
+
+    public bool IsRecorderInitialised()
+    {
+        return recorder != null;
+    }
+
+    public bool IsRendering()
+    {
+        return _isRendering;
+    }
+
+    public string CurrentHRTFName()
+    {
+        return steamAudioManager.hrtfNames[steamAudioManager.currentHRTF]; // SOFA file name
+    }
+
+    // Called when we want to move to the next HRTF in our list and return back to the first one when we are at the last
+    private void UpdateHRTF()
+    {
+        if (IsLastHRTF())
+        {
+            steamAudioManager.currentHRTF = 0;
+        }
+        else 
+        {
+            steamAudioManager.currentHRTF++;
+        }
+    }
+
+    public bool IsLastHRTF()
+    {
+        return steamAudioManager.currentHRTF == steamAudioManager.hrtfNames.Length - 1;
+    }
+
+    // This method retrieves the amount of custom HRTF's in the scene
+    public int AmountOfHRTFs()
+    {
+        // -1 since the first HRTF in the manager is always the system default one which we do not care about.
+        return steamAudioManager.hrtfNames.Length - 1;
+    }
+    
+    // Called when we want to begin a new render
+    private void ResetAudioSources()
+    {
+        for (int i = 0; i < audioSources.Length; i++)
+        {
+            audioSources[i].Stop();
+            audioSources[i].time = 0.0f;
+            audioSources[i].Play();
+        }
+    }
+
+    public string TimeLeft()
+    {
+        return timer.GetTimeLeft().ToString();
+    }
+
+    public bool IsTiming()
+    {
+        return timer.IsActive();
+    }
+}
