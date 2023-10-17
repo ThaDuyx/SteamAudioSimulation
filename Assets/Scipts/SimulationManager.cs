@@ -46,8 +46,8 @@ public class SimulationManager : MonoBehaviour
     {
         _isRendering = true;
         ResetAudioSources();
-        //UpdateHRTF();
-        ToggleRecording();
+        // UpdateHRTF();
+        recorder.ToggleRecording();
         timer.Begin(simulationLength);
     }
 
@@ -56,9 +56,9 @@ public class SimulationManager : MonoBehaviour
     {
         ResetAudioSources();
 
-        ToggleRecording();      // Stop previous recording
-        UpdateHRTF();           // Select next HRTF
-        ToggleRecording();      // Start recording the next
+        recorder.ToggleRecording();     // Stop previous recording
+        UpdateHRTF();                   // Select next HRTF
+        recorder.ToggleRecording();     // Start recording the next
 
         timer.Begin(simulationLength);
     }
@@ -70,34 +70,15 @@ public class SimulationManager : MonoBehaviour
         steamAudioManager.currentHRTF = 0;
         timer.Stop();
         recorder.StopRecording();
-        
-    }
-
-    // Record in-game audio
-    private void ToggleRecording()
-    {
-        if (recorder.IsRecording())
-        {
-            recorder.StopRecording();
-        }
-        else
-        {
-            recorder.StartRecording(CurrentHRTFName());
-        }
     }
 
     // Used by the AudioCapturer class in conjunction with OnAudioFilterRead() which is a MonoBehavior class that needs an AudioSource.
     // This method binds the Recorder class together with the Audio.
     public void TransmitData(float[] data)
     {
-        if (IsRecorderInitialised() && _isRendering) {
+        if (recorder != null && recorder.IsRecording() && _isRendering) {
             recorder.ConvertAndWrite(data);
         }
-    }
-
-    public bool IsRecorderInitialised()
-    {
-        return recorder != null;
     }
 
     public bool IsRendering()

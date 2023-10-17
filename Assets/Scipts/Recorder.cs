@@ -21,6 +21,18 @@ public class Recorder
         this.outputSampleRate = outputSampleRate;
     }
 
+    public void ToggleRecording()
+    {
+        if (_isRecording)
+        {
+            StopRecording();
+        }
+        else 
+        {
+            StartRecording(SimulationManager.Instance.CurrentHRTFName());
+        }
+    }
+
     public void StartRecording(string microphoneName) 
     {
         FILENAME = microphoneName;
@@ -42,7 +54,7 @@ public class Recorder
     {
         _isRecording = false;
         WriteHeader();
-    }  
+    }
 
     private void StartWriting(string name) 
     {
