@@ -42,7 +42,7 @@ public class SimulationManager : MonoBehaviour
     }
 
     // Start rendering process
-    public void StartRendering()
+    public void StartRender()
     {
         _isRendering = true;
         ResetAudioSources();
@@ -52,7 +52,7 @@ public class SimulationManager : MonoBehaviour
     }
 
     // Updates the state to continue rendering with the next HRTF in the list
-    public void ContinueRendering()
+    public void ContinueRender()
     {
         ResetAudioSources();
 
@@ -64,7 +64,7 @@ public class SimulationManager : MonoBehaviour
     }
 
     // Stop rendering process
-    public void StopRendering()
+    public void StopRender()
     {
         _isRendering = false;
         steamAudioManager.currentHRTF = 0;
@@ -104,6 +104,7 @@ public class SimulationManager : MonoBehaviour
         }
     }
 
+    // Returning true if the rendering process has reached the end of the HRTF array and concludes the render.
     public bool IsLastHRTF()
     {
         return steamAudioManager.currentHRTF == steamAudioManager.hrtfNames.Length - 1;
@@ -127,6 +128,7 @@ public class SimulationManager : MonoBehaviour
         }
     }
 
+    // Used for visualising the time on the view
     public string TimeLeft()
     {
         return timer.GetTimeLeft().ToString();

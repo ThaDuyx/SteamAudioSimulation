@@ -42,11 +42,11 @@ public class SimulationView : MonoBehaviour
     {
         if (SimulationManager.Instance.IsRendering())
         {
-            SimulationManager.Instance.StopRendering();
+            SimulationManager.Instance.StopRender();
         }
         else 
         {
-            SimulationManager.Instance.StartRendering();
+            SimulationManager.Instance.StartRender();
         }
     }
 
@@ -63,13 +63,13 @@ public class SimulationView : MonoBehaviour
             // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
             if (SimulationManager.Instance.IsRendering() && !SimulationManager.Instance.IsLastHRTF())
             {
-                SimulationManager.Instance.ContinueRendering();
+                SimulationManager.Instance.ContinueRender();
                 
                 currentHRTFText.text = SimulationManager.Instance.CurrentHRTFName();
             }
             else if (SimulationManager.Instance.IsRendering() && SimulationManager.Instance.IsLastHRTF())
             {
-                SimulationManager.Instance.StopRendering();
+                SimulationManager.Instance.StopRender();
 
                 SetUI();
             }
