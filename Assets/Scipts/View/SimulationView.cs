@@ -13,6 +13,8 @@ public class SimulationView : MonoBehaviour
     private TMP_Text distanceText;
     [SerializeField]
     private TMP_Text wallDistanceText;
+    [SerializeField]
+    private TMP_Text simulationDurationText;
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     void Start()
     {
@@ -57,7 +59,8 @@ public class SimulationView : MonoBehaviour
         if (SimulationManager.Instance.IsTiming() && SimulationManager.Instance.IsRendering())
         {
             // Update time while rendering
-            timerText.text = "Time left: " + SimulationManager.Instance.TimeLeft();
+            timerText.text = "Time left: " + SimulationManager.Instance.TimeLeft() + "s";
+            simulationDurationText.text = "Time left: " + SimulationManager.Instance.TimeLeftOfSimulation() + "s";
         }
         else 
         {
@@ -81,6 +84,8 @@ public class SimulationView : MonoBehaviour
     private void SetUI()
     {
         timerText.text = "Press T";
+
+        simulationDurationText.text = "Idle state";
 
         currentHRTFText.text = "sofa: " + SimulationManager.Instance.CurrentHRTFName();
 

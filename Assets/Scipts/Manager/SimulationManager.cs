@@ -70,6 +70,7 @@ public class SimulationManager : MonoBehaviour
         steamAudioManager.currentHRTF = 0;
         timer.Stop();
         recorder.StopRecording();
+        
     }
 
     // Used by the AudioCapturer class in conjunction with OnAudioFilterRead() which is a MonoBehavior class that needs an AudioSource.
@@ -132,6 +133,11 @@ public class SimulationManager : MonoBehaviour
     public string TimeLeft()
     {
         return timer.GetTimeLeft().ToString();
+    }
+
+    public string TimeLeftOfSimulation()
+    {
+        return timer.GetTimeLeftOfSimulation().ToString();
     }
 
     public bool IsTiming()
