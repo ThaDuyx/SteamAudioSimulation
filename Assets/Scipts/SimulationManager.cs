@@ -19,6 +19,8 @@ public class SimulationManager : MonoBehaviour
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
     {
+        print("Awake - simulationManager");
+
         if (Instance != null && Instance != this)
         {
             Destroy(this);
@@ -27,17 +29,17 @@ public class SimulationManager : MonoBehaviour
         {
             Instance = this;
         }
+
+        // Initialise at the Awake lifecycle in order to have it ready for the view to read
+        SteamAudioManager[] steamAudioManagers = FindObjectsOfType<SteamAudioManager>();
+        steamAudioManager = steamAudioManagers[0];
     }
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function / Constructor of the class
     void Start()
-    {
-        SteamAudioManager[] steamAudioManagers = FindObjectsOfType<SteamAudioManager>();
-        steamAudioManager = steamAudioManagers[0];
-
+    {   
         recorder = new Recorder(UnityEngine.AudioSettings.outputSampleRate);
         timer = gameObject.AddComponent<Timer>();
-
         audioSources = FindObjectsOfType<AudioSource>();
     }
 
@@ -46,7 +48,7 @@ public class SimulationManager : MonoBehaviour
     {
         _isRendering = true;
         ResetAudioSources();
-        // UpdateHRTF();
+        UpdateHRTF();
         recorder.ToggleRecording();
         timer.Begin(simulationLength);
     }

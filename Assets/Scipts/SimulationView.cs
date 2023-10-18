@@ -13,11 +13,13 @@ public class SimulationView : MonoBehaviour
     private TMP_Text currentHRTFText;
     [SerializeField]
     private TMP_Text sampleRateText;
-
+    [SerializeField] 
+    private TMP_Text distanceText;
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     void Start()
     {
         SetUI();
+        print("Start - SimulationView");
     }
 
     // Basic Unity MonoBehaviour method - Update is called every frame, if the MonoBehaviour is enabled.
@@ -83,8 +85,20 @@ public class SimulationView : MonoBehaviour
 
         float distance = Vector3.Distance(cameraTransform.position, speakerTransform.position);
 
-        currentHRTFText.text = distance.ToString() + " units.";
+        // float thisShit = cameraTransform.position.x - speakerTransform.position.x;
 
-        sampleRateText.text = UnityEngine.AudioSettings.outputSampleRate.ToString();
+        float horizontalDistance = Mathf.Abs(cameraTransform.position.z - speakerTransform.position.z);
+
+        Vector3 sqrMag = (cameraTransform.position - speakerTransform.position);
+
+        Debug.Log(cameraTransform.position.z);
+        Debug.Log(speakerTransform.position.z);
+        Debug.Log(horizontalDistance);
+
+        currentHRTFText.text = SimulationManager.Instance.CurrentHRTFName();
+
+        distanceText.text = "d: " + distance.ToString() + " units(m)";
+
+        sampleRateText.text = "fs: " + UnityEngine.AudioSettings.outputSampleRate.ToString();
     }
 }
