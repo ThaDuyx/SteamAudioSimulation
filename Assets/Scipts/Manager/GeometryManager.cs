@@ -38,20 +38,17 @@ public class GeometryManager : MonoBehaviour
     private void CalculateSourceDistance()
     {
         // Calculate distance if objects are on the same axis 
-        // or else use Pythagoras for triangle base (b) since we know (a) & (c)
+        // or else use Pythagoras for finding triangle base (b) since we know (a) & (c)
         if (receiverTransform.position.x == speakerTransform.position.x)
         {
-            print("On z axis");
             _sourceDistance = Mathf.Abs(receiverTransform.position.z - speakerTransform.position.z);
         }
         else if (receiverTransform.position.z == speakerTransform.position.z)
         {
-            print("On z axis");
             _sourceDistance = Mathf.Abs(receiverTransform.position.x - speakerTransform.position.x);
         }
         else 
         {
-            print("Use Pythagoras");
             // Pythagoras: b = sqrt(c^2 - a^2)
             float a = Mathf.Abs(receiverTransform.position.y - speakerTransform.position.y);
             float c = Vector3.Distance(receiverTransform.position, speakerTransform.position);
