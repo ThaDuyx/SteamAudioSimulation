@@ -10,6 +10,7 @@ public class SimulationManager : MonoBehaviour
     private AudioListener mainListener;
     private AudioSource[] audioSources;
     private SteamAudioManager steamAudioManager;
+    private SteamAudioSource[] steamAudioSources;
     private Recorder recorder;
     private Timer timer;
 

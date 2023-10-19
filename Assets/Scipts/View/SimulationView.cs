@@ -9,15 +9,20 @@ public class SimulationView : MonoBehaviour
     private TMP_Text currentHRTFText;
     [SerializeField]
     private TMP_Text sampleRateText;
-    [SerializeField] 
+    [SerializeField]
     private TMP_Text distanceText;
     [SerializeField]
     private TMP_Text wallDistanceText;
     [SerializeField]
     private TMP_Text simulationDurationText;
+    [SerializeField]
+    private TMP_Text reflectionDistanceText;
+
     // Basic Unity MonoBehaviour method - Essentially a start-up function
-    void Start()
+    private void Start()
     {
+        GeometryManager.Instance.CalculateGeometry();
+
         SetUI();
     }
 
@@ -87,12 +92,14 @@ public class SimulationView : MonoBehaviour
 
         simulationDurationText.text = "Idle state";
 
-        currentHRTFText.text = "sofa: " + SimulationManager.Instance.CurrentHRTFName();
+        currentHRTFText.text = SimulationManager.Instance.CurrentHRTFName();
 
-        distanceText.text = "d(source): " + GeometryManager.Instance.SourceDistance() + " units (m)";
+        distanceText.text = "d(source): " + GeometryManager.Instance.DistanceToSource() + " units (m)";
 
-        wallDistanceText.text = "d(wall): " + GeometryManager.Instance.WallDistance() + " units (m)";
+        wallDistanceText.text = "d(wall): " + GeometryManager.Instance.DistanceToWall() + " units (m)";
 
-        sampleRateText.text = "fs: " + UnityEngine.AudioSettings.outputSampleRate.ToString();
+        reflectionDistanceText.text = "d(refl): " + GeometryManager.Instance.DistanceOfReflection() + " units (m)";
+
+        sampleRateText.text = "fs: " + AudioSettings.outputSampleRate.ToString();
     }
 }
