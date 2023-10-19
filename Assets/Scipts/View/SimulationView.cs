@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SimulationView : MonoBehaviour
 {
@@ -17,6 +18,10 @@ public class SimulationView : MonoBehaviour
     private TMP_Text simulationDurationText;
     [SerializeField]
     private TMP_Text reflectionDistanceText;
+    [SerializeField]
+    private Slider bounceSlider;
+    [SerializeField]
+    private Toggle applyReflToHRTFToggle;
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
@@ -101,5 +106,22 @@ public class SimulationView : MonoBehaviour
         reflectionDistanceText.text = "d(refl): " + GeometryManager.Instance.DistanceOfReflection() + " units (m)";
 
         sampleRateText.text = "fs: " + AudioSettings.outputSampleRate.ToString();
+
+        bounceSlider.value = SimulationManager.Instance.GetRealTimeBounces();
+
+        bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
+
+        applyReflToHRTFToggle.isOn = SimulationManager.Instance.GetHRTFReflectionStatus();
+    }
+
+    public void BounceSliderChanged(float value)
+    {
+        SimulationManager.Instance.SetRealTimeBounces(value);
+        bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
+    }
+
+    public void HRTFToggleChanged(bool isOn)
+    {
+        SimulationManager.Instance.SetHRTFReflectionStatus(isOn);
     }
 }

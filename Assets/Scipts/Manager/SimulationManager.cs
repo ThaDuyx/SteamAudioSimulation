@@ -1,5 +1,7 @@
 using SteamAudio;
+using Unity.VisualScripting.Dependencies.NCalc;
 using UnityEngine;
+using UnityEngine.UIElements.Experimental;
 
 public class SimulationManager : MonoBehaviour
 {
@@ -32,6 +34,8 @@ public class SimulationManager : MonoBehaviour
         // Initialise at the Awake lifecycle in order to have it ready for the view to read
         SteamAudioManager[] steamAudioManagers = FindObjectsOfType<SteamAudioManager>();
         steamAudioManager = steamAudioManagers[0];
+
+        steamAudioSources = FindObjectsOfType<SteamAudioSource>();
     }
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function / Constructor of the class
@@ -144,5 +148,26 @@ public class SimulationManager : MonoBehaviour
     public bool IsTiming()
     {
         return timer.IsActive();
+    }
+
+    public int GetRealTimeBounces() 
+    {
+        return SteamAudioSettings.Singleton.realTimeBounces;
+    }
+
+    public void SetRealTimeBounces(float value)
+    {
+        // Converting to integer
+        SteamAudioSettings.Singleton.realTimeBounces = (int)value;
+    }
+
+    public bool GetHRTFReflectionStatus()
+    {
+        return steamAudioSources[0].applyHRTFToReflections;
+    }
+
+    public void SetHRTFReflectionStatus(bool value)
+    {
+        steamAudioSources[0].applyHRTFToReflections = value;
     }
 }

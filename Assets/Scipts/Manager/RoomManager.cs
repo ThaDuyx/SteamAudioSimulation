@@ -4,7 +4,7 @@ using UnityEngine;
 public class RoomManager : MonoBehaviour
 {
     // Singleton object
-    public static RoomManager Instance { get; private set;}
+    public static RoomManager Instance { get; private set; }
 
     [SerializeField] private GameObject[] rooms;
     private GameObject selectedRoom;

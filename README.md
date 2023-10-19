@@ -1,1 +1,1 @@
-# GN*ratr*
+# GN-ratr
