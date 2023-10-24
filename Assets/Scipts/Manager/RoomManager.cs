@@ -1,18 +1,16 @@
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class RoomManager : MonoBehaviour
 {
     // Singleton object
     public static RoomManager Instance { get; private set; }
 
-    [SerializeField] private GameObject[] rooms;
-    private GameObject selectedRoom;
-    private GameObject selectedSpeaker;
-    private List<GameObject> speakerArray;
-
+    // [SerializeField] private GameObject[] rooms;
+    // private GameObject selectedRoom;
+    // private GameObject selectedSpeaker;
+    //private List<GameObject> speakerArray;
     // private string speakerTag = "speaker";
-    private bool _isPreviewing = false;
 
     private void Awake()
     {
@@ -25,19 +23,9 @@ public class RoomManager : MonoBehaviour
             Instance = this;
         }
     }
-    
-    void Start()
-    {
-        
-    }
 
-    void Update()
+    public void TestScene()
     {
-        
-    }
-
-    public bool IsPreviewing()
-    {
-        return _isPreviewing;
+        SceneManager.LoadScene(1);
     }
 }

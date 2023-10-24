@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Collections;
 using UnityEngine;
 
 // Reference: http://abolfazltanha.com/Source-codes-92045/

@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 // IMPORTANT: This is the class that make us able to record in game!
@@ -18,12 +15,12 @@ public class AudioCapturer : MonoBehaviour
             {
                 if (data[i] > 1) 
                 {
-                    Debug.Log("Is over 1");
+                    Debug.Log("Amp. over 1");
                 }
 
                 if (data[i] < -1) 
                 {
-                    Debug.Log("Is under -1");
+                    Debug.Log("Amp. under -1");
                 }
             }
         }

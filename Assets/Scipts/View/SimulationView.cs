@@ -4,29 +4,20 @@ using UnityEngine.UI;
 
 public class SimulationView : MonoBehaviour
 {
-    [SerializeField]
-    private TMP_Text timerText;
-    [SerializeField]
-    private TMP_Text currentHRTFText;
-    [SerializeField]
-    private TMP_Text sampleRateText;
-    [SerializeField]
-    private TMP_Text distanceText;
-    [SerializeField]
-    private TMP_Text wallDistanceText;
-    [SerializeField]
-    private TMP_Text simulationDurationText;
-    [SerializeField]
-    private TMP_Text reflectionDistanceText;
-    [SerializeField]
-    private Slider bounceSlider;
-    [SerializeField]
-    private Toggle applyReflToHRTFToggle;
+    [SerializeField] private TMP_Text timerText;
+    [SerializeField] private TMP_Text currentHRTFText;
+    [SerializeField] private TMP_Text sampleRateText;
+    [SerializeField] private TMP_Text distanceText;
+    [SerializeField] private TMP_Text wallDistanceText;
+    [SerializeField] private TMP_Text simulationDurationText;
+    [SerializeField] private TMP_Text reflectionDistanceText;
+    [SerializeField] private Slider bounceSlider;
+    [SerializeField] private Toggle applyReflToHRTFToggle;
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
     {
-        GeometryManager.Instance.CalculateGeometry();
+        SetContent();
 
         SetUI();
     }
@@ -47,6 +38,16 @@ public class SimulationView : MonoBehaviour
             ToggleSimulation();
 
             SetUI();
+        }
+
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            SimulationManager.Instance.ToggleAudio();
+        }
+
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            RoomManager.Instance.TestScene();
         }
     }
 
@@ -88,6 +89,11 @@ public class SimulationView : MonoBehaviour
                 SetUI();
             }
         }
+    }
+
+    private void SetContent()
+    {
+        GeometryManager.Instance.CalculateGeometry();
     }
 
     // Updates elements in the UI

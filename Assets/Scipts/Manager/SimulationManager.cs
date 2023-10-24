@@ -1,15 +1,12 @@
 using SteamAudio;
-using Unity.VisualScripting.Dependencies.NCalc;
 using UnityEngine;
-using UnityEngine.UIElements.Experimental;
 
 public class SimulationManager : MonoBehaviour
 {
     // Singleton object
     public static SimulationManager Instance { get; private set; }
 
-    [SerializeField]
-    private AudioListener mainListener;
+    [SerializeField] private AudioListener mainListener;
     private AudioSource[] audioSources;
     private SteamAudioManager steamAudioManager;
     private SteamAudioSource[] steamAudioSources;
@@ -36,6 +33,7 @@ public class SimulationManager : MonoBehaviour
         steamAudioManager = steamAudioManagers[0];
 
         steamAudioSources = FindObjectsOfType<SteamAudioSource>();
+        audioSources = FindObjectsOfType<AudioSource>();
     }
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function / Constructor of the class
@@ -169,5 +167,28 @@ public class SimulationManager : MonoBehaviour
     public void SetHRTFReflectionStatus(bool value)
     {
         steamAudioSources[0].applyHRTFToReflections = value;
+    }
+
+    public void PlayAudio()
+    {
+        audioSources[0].Play();
+    }
+
+    public void StopAudio()
+    {
+        audioSources[0].Stop();
+        audioSources[0].time = 0.0f;
+    }
+
+    public void ToggleAudio()
+    {
+        if (audioSources[0].isPlaying)
+        {
+            StopAudio();
+        }
+        else 
+        {
+            PlayAudio();
+        }
     }
 }
