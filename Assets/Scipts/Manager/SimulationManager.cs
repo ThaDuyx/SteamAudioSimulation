@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using SteamAudio;
 using UnityEngine;
 
@@ -10,44 +11,69 @@ public class SimulationManager : MonoBehaviour
     private AudioSource[] audioSources;
     private SteamAudioManager steamAudioManager;
     private SteamAudioSource[] steamAudioSources;
+    private List<Speaker> speakers;
     private Recorder recorder;
     private Timer timer;
+    private Logger logger;
+    private Calculator calculator;
 
-    private bool _isRendering;
+    public bool IsRendering { get; private set;}
     private readonly float simulationLength = 8.0f;
 
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
     {
         if (Instance != null && Instance != this)
-        {
-            Destroy(this);
+        { 
+            Destroy(this); 
         }
         else 
-        {
-            Instance = this;
+        { 
+            Instance = this; 
         }
 
         // Initialise at the Awake lifecycle in order to have it ready for the view to read
-        SteamAudioManager[] steamAudioManagers = FindObjectsOfType<SteamAudioManager>();
-        steamAudioManager = steamAudioManagers[0];
-
-        steamAudioSources = FindObjectsOfType<SteamAudioSource>();
-        audioSources = FindObjectsOfType<AudioSource>();
+        SetContent();
     }
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function / Constructor of the class
     void Start()
     {   
         recorder = new Recorder(UnityEngine.AudioSettings.outputSampleRate);
+        logger = new Logger();
         timer = gameObject.AddComponent<Timer>();
         audioSources = FindObjectsOfType<AudioSource>();
+    }
+
+    private void SetContent()
+    {
+        SteamAudioManager[] steamAudioManagers = FindObjectsOfType<SteamAudioManager>();
+        steamAudioManager = steamAudioManagers[0];
+
+        steamAudioSources = FindObjectsOfType<SteamAudioSource>();
+        audioSources = FindObjectsOfType<AudioSource>();
+        
+        speakers = new List<Speaker>();
+        calculator = new Calculator();
+        
+        foreach (var audioSource in audioSources)
+        {
+            var steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
+            Speaker speaker = new(audioSource, steamSource);
+            speakers.Add(speaker);
+
+            speaker.DistanceToReceiver = calculator.CalculateDistanceToReceiver(mainListener.transform, audioSource.transform);
+            speaker.Azimuth = calculator.CalculateAzimuth(mainListener.transform, audioSource.transform);
+            speaker.Elevation = calculator.CalculateElevation(mainListener.transform, audioSource.transform);
+        }
+
+        speakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));        
     }
 
     // Start rendering process
     public void StartRender()
     {
-        _isRendering = true;
+        IsRendering = true;
         ResetAudioSources();
         UpdateHRTF();
         recorder.ToggleRecording();
@@ -69,25 +95,26 @@ public class SimulationManager : MonoBehaviour
     // Stop rendering process
     public void StopRender()
     {
-        _isRendering = false;
+        IsRendering = false;
         steamAudioManager.currentHRTF = 0;
         timer.Stop();
         recorder.StopRecording();
         
+        logger.LogTitle();
+        
+        foreach (var speaker in speakers)
+        {
+            logger.Log(speaker: speaker);
+        }
     }
 
     // Used by the AudioCapturer class in conjunction with OnAudioFilterRead() which is a MonoBehavior class that needs an AudioSource.
     // This method binds the Recorder class together with the Audio.
     public void TransmitData(float[] data)
     {
-        if (recorder != null && recorder.IsRecording() && _isRendering) {
+        if (recorder != null && recorder.IsRecording() && IsRendering) {
             recorder.ConvertAndWrite(data);
         }
-    }
-
-    public bool IsRendering()
-    {
-        return _isRendering;
     }
 
     public string CurrentHRTFName()
@@ -99,13 +126,9 @@ public class SimulationManager : MonoBehaviour
     private void UpdateHRTF()
     {
         if (IsLastHRTF())
-        {
-            steamAudioManager.currentHRTF = 0;
-        }
+        { steamAudioManager.currentHRTF = 0; }
         else 
-        {
-            steamAudioManager.currentHRTF++;
-        }
+        { steamAudioManager.currentHRTF++; }
     }
 
     // Returning true if the rendering process has reached the end of the HRTF array and concludes the render.
@@ -182,13 +205,13 @@ public class SimulationManager : MonoBehaviour
 
     public void ToggleAudio()
     {
-        if (audioSources[0].isPlaying)
-        {
-            StopAudio();
+        if (audioSources[0].isPlaying) 
+        { 
+            StopAudio(); 
         }
         else 
-        {
-            PlayAudio();
+        { 
+            PlayAudio(); 
         }
     }
 }
