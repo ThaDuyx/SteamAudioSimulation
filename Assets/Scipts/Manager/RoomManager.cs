@@ -1,6 +1,11 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+enum Room 
+{
+    TestRoom,
+    SmallRoom
+}
 public class RoomManager : MonoBehaviour
 {
     // Singleton object
@@ -9,9 +14,9 @@ public class RoomManager : MonoBehaviour
     // [SerializeField] private GameObject[] rooms;
     // private GameObject selectedRoom;
     // private GameObject selectedSpeaker;
-    //private List<GameObject> speakerArray;
+    // private List<GameObject> speakerArray;
     // private string speakerTag = "speaker";
-
+    
     private void Awake()
     {
         if (Instance != null && Instance != this)

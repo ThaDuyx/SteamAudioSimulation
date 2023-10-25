@@ -1,7 +1,13 @@
+using System;
 using System.Collections.Generic;
 using SteamAudio;
 using UnityEngine;
 
+public enum RenderMethod
+{
+   LoneSpeaker,
+   AllSpeakers
+}
 public class SimulationManager : MonoBehaviour
 {
     // Singleton object
@@ -16,9 +22,13 @@ public class SimulationManager : MonoBehaviour
     private Timer timer;
     private Logger logger;
     private Calculator calculator;
-
+    private int activeSpeaker = 0;
+    
+    public string folderPath = "/Users/duyx/Code/Jabra/python/renders";
     public bool IsRendering { get; private set;}
-    private readonly float simulationLength = 8.0f;
+    public int SampleRate { get { return UnityEngine.AudioSettings.outputSampleRate; } }
+    public int SpeakerCount { get { return speakers.Count; } }
+    public float SimulationLength { get { return 8.0f; } private set { value = SimulationLength; } }
 
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
@@ -71,25 +81,50 @@ public class SimulationManager : MonoBehaviour
     }
 
     // Start rendering process
-    public void StartRender()
+    public void StartRender(RenderMethod method)
     {
         IsRendering = true;
-        ResetAudioSources();
+        SetRecordingPath();
         UpdateHRTF();
+        
+        switch(method)
+        {
+            case RenderMethod.AllSpeakers:
+                ResetAudioSources();
+                break;
+            case RenderMethod.LoneSpeaker:
+                PlayAudio();
+                break;
+            default:
+                break;
+        }
+
         recorder.ToggleRecording();
-        timer.Begin(simulationLength);
+        timer.Begin(SimulationLength);
     }
 
     // Updates the state to continue rendering with the next HRTF in the list
-    public void ContinueRender()
+    public void ContinueRender(RenderMethod method)
     {
-        ResetAudioSources();
+        recorder.ToggleRecording();         // Stop previous recording
 
-        recorder.ToggleRecording();     // Stop previous recording
-        UpdateHRTF();                   // Select next HRTF
-        recorder.ToggleRecording();     // Start recording the next
+        switch(method)
+        {
+            case RenderMethod.AllSpeakers:
+                UpdateHRTF();               // Moves to next HRTF
+                ResetAudioSources();        
+                break;
 
-        timer.Begin(simulationLength);
+            case RenderMethod.LoneSpeaker:
+                UpdateSpeakerAndPlay();     // Moves to next speaker            
+                break;
+
+            default:
+                break;
+        }
+
+        recorder.ToggleRecording();         // Start new recording
+        timer.Begin(SimulationLength);
     }
 
     // Stop rendering process
@@ -122,13 +157,22 @@ public class SimulationManager : MonoBehaviour
         return steamAudioManager.hrtfNames[steamAudioManager.currentHRTF]; // SOFA file name
     }
 
+    public string CurrentSpeakerName()
+    {
+        return speakers[activeSpeaker].Name;
+    }
+
     // Called when we want to move to the next HRTF in our list and return back to the first one when we are at the last
     private void UpdateHRTF()
     {
         if (IsLastHRTF())
-        { steamAudioManager.currentHRTF = 0; }
+        { 
+            steamAudioManager.currentHRTF = 0; 
+        }
         else 
-        { steamAudioManager.currentHRTF++; }
+        { 
+            steamAudioManager.currentHRTF++; 
+        }
     }
 
     // Returning true if the rendering process has reached the end of the HRTF array and concludes the render.
@@ -153,6 +197,17 @@ public class SimulationManager : MonoBehaviour
             audioSources[i].time = 0.0f;
             audioSources[i].Play();
         }
+    }
+
+    public bool IsLastSpeaker()
+    {
+        return activeSpeaker == speakers.Count - 1;
+    }
+
+    private void UpdateSpeakerAndPlay()
+    {
+        activeSpeaker++;
+        PlayAudio();
     }
 
     // Used for visualising the time on the view
@@ -194,18 +249,26 @@ public class SimulationManager : MonoBehaviour
 
     public void PlayAudio()
     {
-        audioSources[0].Play();
+        audioSources[activeSpeaker].Play();
+    }
+
+    public void PlayAllAudio()
+    {
+        foreach (var audioSource in audioSources)
+        {
+            audioSource.Play();
+        }
     }
 
     public void StopAudio()
     {
-        audioSources[0].Stop();
-        audioSources[0].time = 0.0f;
+        audioSources[activeSpeaker].Stop();
+        audioSources[activeSpeaker].time = 0.0f;
     }
 
     public void ToggleAudio()
     {
-        if (audioSources[0].isPlaying) 
+        if (audioSources[activeSpeaker].isPlaying) 
         { 
             StopAudio(); 
         }
@@ -213,5 +276,12 @@ public class SimulationManager : MonoBehaviour
         { 
             PlayAudio(); 
         }
+    }
+
+    private void SetRecordingPath()
+    {
+        string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
+        folderPath += timeStamp + "/";
+        System.IO.Directory.CreateDirectory(folderPath);
     }
 }

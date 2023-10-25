@@ -19,8 +19,6 @@ public class SimulationView : MonoBehaviour
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
     {
-        SetContent();
-
         SetUI();
     }
 
@@ -29,7 +27,9 @@ public class SimulationView : MonoBehaviour
     {
         HandleKeyStrokes();
 
-        HandleSimulation();
+        // HandleSimulation();
+
+        HandleRender();
     }
 
     // Method for handling whenever specific keys are pressed on the keyboard.
@@ -49,6 +49,7 @@ public class SimulationView : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.A))
         {
+            // SimulationManager.Instance.PlayAudio();
             // RoomManager.Instance.TestScene();
         }
     }
@@ -62,7 +63,7 @@ public class SimulationView : MonoBehaviour
         }
         else 
         {
-            SimulationManager.Instance.StartRender();
+            SimulationManager.Instance.StartRender(method: RenderMethod.LoneSpeaker);
         }
     }
 
@@ -80,7 +81,7 @@ public class SimulationView : MonoBehaviour
             // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
             if (SimulationManager.Instance.IsRendering && !SimulationManager.Instance.IsLastHRTF())
             {
-                SimulationManager.Instance.ContinueRender();
+                SimulationManager.Instance.ContinueRender(method: RenderMethod.AllSpeakers);
                 
                 SetUI();
             }
@@ -93,9 +94,30 @@ public class SimulationView : MonoBehaviour
         }
     }
 
-    private void SetContent()
+    private void HandleRender()
     {
-        // GeometryManager.Instance.CalculateGeometry();
+        if (SimulationManager.Instance.IsTiming() && SimulationManager.Instance.IsRendering)
+        {
+            // Update time while rendering
+            timerText.text = "Time left: " + SimulationManager.Instance.TimeLeft() + "s";
+            simulationDurationText.text = "Time left: " + SimulationManager.Instance.TimeLeftOfSimulation() + "s";
+        }
+        else 
+        {
+            // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
+            if (SimulationManager.Instance.IsRendering && !SimulationManager.Instance.IsLastSpeaker())
+            {
+                SimulationManager.Instance.ContinueRender(method: RenderMethod.LoneSpeaker);
+                
+                SetUI();
+            }
+            else if (SimulationManager.Instance.IsRendering && SimulationManager.Instance.IsLastSpeaker())
+            {
+                SimulationManager.Instance.StopRender();
+
+                SetUI();
+            }
+        }
     }
 
     // Updates elements in the UI
