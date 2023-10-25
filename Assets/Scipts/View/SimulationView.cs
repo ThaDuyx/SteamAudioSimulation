@@ -1,4 +1,3 @@
-using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -39,20 +38,7 @@ public class SimulationView : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.P))
         {
-            RenderManager.Instance.ToggleAudio();
-        }
-    }
-
-    // Either starts or stops the simulation dependent on which state currently is active.
-    private void ToggleRender()
-    {
-        if (RenderManager.Instance.IsRendering)
-        {
-            RenderManager.Instance.StopRender();
-        }
-        else 
-        {
-            RenderManager.Instance.StartRender(method: chosenMethod);
+            RenderManager.Instance.ToggleAllAudio();
         }
     }
 
@@ -67,47 +53,33 @@ public class SimulationView : MonoBehaviour
         }
         else 
         {
-            HandleRenderMethod();
+            if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA
+            || RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker)
+                {
+                    RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
+                    
+                    SetUI();
+                }
+                else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA
+                || RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
+                {
+                    RenderManager.Instance.StopRender();
+
+                    SetUI();
+                }
         }
     }
 
-    private void HandleRenderMethod()
+    // Either starts or stops the simulation dependent on which state currently is active.
+    private void ToggleRender()
     {
-        switch (chosenMethod)
+        if (RenderManager.Instance.IsRendering)
         {
-            case RenderMethod.AllSpeakers:
-                // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
-                if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
-                {
-                    RenderManager.Instance.ContinueRender(method: chosenMethod);
-                    
-                    SetUI();
-                }
-                else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA)
-                {
-                    RenderManager.Instance.StopRender();
-
-                    SetUI();
-                }
-
-                break;
-
-            case RenderMethod.LoneSpeaker:
-                // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
-                if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker)
-                {
-                    RenderManager.Instance.ContinueRender(method: RenderMethod.LoneSpeaker);
-                    
-                    SetUI();
-                }
-                else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
-                {
-                    RenderManager.Instance.StopRender();
-
-                    SetUI();
-                }
-
-                break;
+            RenderManager.Instance.StopRender();
+        }
+        else 
+        {
+            RenderManager.Instance.StartRender(renderMethod: chosenMethod);
         }
     }
 

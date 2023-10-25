@@ -54,4 +54,21 @@ public class Calculator
         
         return elevation;
     }
+
+    private float CalculateReflectionDistance(Transform receiverTransform, Transform speakerTransform, Transform wallTransform)
+    {
+        // Get normal of the reflection
+        float normal = Mathf.Abs(receiverTransform.position.x - speakerTransform.position.x);
+
+        // Calculate (a) & (b) from positions and use pythagoras for hypotenuse (c);
+        float aReceiver = Mathf.Abs(receiverTransform.position.z - wallTransform.position.z);
+        float bReceiver = Mathf.Abs(receiverTransform.position.x - normal);
+        float cReceiver = Mathf.Sqrt(Mathf.Pow(aReceiver, 2) + Mathf.Pow(bReceiver, 2));
+
+        float aSpeaker = Mathf.Abs(speakerTransform.position.z - wallTransform.position.z);
+        float bSpeaker = Mathf.Abs(speakerTransform.position.x - normal);
+        float cSpeaker = Mathf.Sqrt(Mathf.Pow(aSpeaker, 2) + Mathf.Pow(bSpeaker, 2));
+
+        return cReceiver + cSpeaker;
+    }
 }

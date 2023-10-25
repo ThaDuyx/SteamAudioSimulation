@@ -84,16 +84,16 @@ public class RenderManager : MonoBehaviour
 
     // - Render Methods
     // Start rendering process
-    public void StartRender(RenderMethod method)
+    public void StartRender(RenderMethod renderMethod)
     {
         IsRendering = true;
         SetRecordingPath();
         UpdateSOFA();
         
-        switch(method)
+        switch(renderMethod)
         {
             case RenderMethod.AllSpeakers:
-                ResetAudioSources();
+                ResetAndPlayAudioSources();
                 break;
             case RenderMethod.LoneSpeaker:
                 PlayAudio();
@@ -107,19 +107,19 @@ public class RenderManager : MonoBehaviour
     }
 
     // Updates the state to continue rendering with the next HRTF in the list
-    public void ContinueRender(RenderMethod method)
+    public void ContinueRender(RenderMethod renderMethod)
     {
         recorder.ToggleRecording();         // Stop previous recording
 
-        switch(method)
+        switch(renderMethod)
         {
             case RenderMethod.AllSpeakers:
                 UpdateSOFA();               // Moves to next HRTF
-                ResetAudioSources();        
+                ResetAndPlayAudioSources();        
                 break;
 
             case RenderMethod.LoneSpeaker:
-                UpdateSpeakerAndPlay();     // Moves to next speaker            
+                SelectNextSpeakerAndPlay();     // Moves to next speaker            
                 break;
 
             default:
@@ -169,7 +169,7 @@ public class RenderManager : MonoBehaviour
     }
     
     // Called when we want to begin a new render
-    private void ResetAudioSources()
+    private void ResetAndPlayAudioSources()
     {
         foreach (Speaker speaker in speakers)
         {
@@ -178,7 +178,7 @@ public class RenderManager : MonoBehaviour
         }
     }
 
-    private void UpdateSpeakerAndPlay()
+    private void SelectNextSpeakerAndPlay()
     {
         activeSpeaker++;
         PlayAudio();
@@ -191,27 +191,43 @@ public class RenderManager : MonoBehaviour
 
     public void PlayAllAudio()
     {
-        foreach (var audioSource in audioSources)
+        foreach (Speaker speaker in speakers)
         {
-            audioSource.Play();
+            speaker.audioSource.Play();
         }
     }
 
-    public void StopAudio()
+    public void StopAllAudio()
     {
-        audioSources[activeSpeaker].Stop();
+        foreach (Speaker speaker in speakers)
+        {
+            speaker.audioSource.Stop();
+        }
     }
 
-    public void ToggleAudio()
+    public void ToggleAllAudio()
     {
-        if (audioSources[activeSpeaker].isPlaying) 
+        if (AnySpeakerPlaying()) 
         { 
-            StopAudio(); 
+            StopAllAudio(); 
         }
         else 
         { 
-            PlayAudio(); 
+            PlayAllAudio();
         }
+    }
+
+    private bool AnySpeakerPlaying()
+    {
+        foreach (Speaker speaker in speakers)
+        {
+            if (speaker.audioSource.isPlaying)
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     private void SetRecordingPath()
@@ -221,7 +237,7 @@ public class RenderManager : MonoBehaviour
         System.IO.Directory.CreateDirectory(folderPath);
     }
 
-       public int GetRealTimeBounces() 
+    public int GetRealTimeBounces() 
     {
         return SteamAudioSettings.Singleton.realTimeBounces;
     }
