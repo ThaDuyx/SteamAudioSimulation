@@ -11,10 +11,7 @@ public class SimulationView : MonoBehaviour
     [SerializeField] private TMP_Text simulationDurationText;
     [SerializeField] private Slider bounceSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle;
-    
-    // [SerializeField] private TMP_Text distanceText;
-    // [SerializeField] private TMP_Text wallDistanceText;
-    // [SerializeField] private TMP_Text reflectionDistanceText;
+    private readonly RenderMethod chosenMethod = RenderMethod.LoneSpeaker;
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
@@ -27,8 +24,6 @@ public class SimulationView : MonoBehaviour
     {
         HandleKeyStrokes();
 
-        // HandleSimulation();
-
         HandleRender();
     }
 
@@ -37,86 +32,82 @@ public class SimulationView : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            ToggleSimulation();
+            ToggleRender();
 
             SetUI();
         }
 
         if (Input.GetKeyDown(KeyCode.P))
         {
-            SimulationManager.Instance.ToggleAudio();
-        }
-
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            // SimulationManager.Instance.PlayAudio();
-            // RoomManager.Instance.TestScene();
+            RenderManager.Instance.ToggleAudio();
         }
     }
 
     // Either starts or stops the simulation dependent on which state currently is active.
-    private void ToggleSimulation()
+    private void ToggleRender()
     {
-        if (SimulationManager.Instance.IsRendering)
+        if (RenderManager.Instance.IsRendering)
         {
-            SimulationManager.Instance.StopRender();
+            RenderManager.Instance.StopRender();
         }
         else 
         {
-            SimulationManager.Instance.StartRender(method: RenderMethod.LoneSpeaker);
+            RenderManager.Instance.StartRender(method: chosenMethod);
         }
     }
 
     // Called in the Update() MonoBehavior method
-    private void HandleSimulation()
+    private void HandleRender()
     {
-        if (SimulationManager.Instance.IsTiming() && SimulationManager.Instance.IsRendering)
+        if (RenderManager.Instance.IsTiming && RenderManager.Instance.IsRendering)
         {
             // Update time while rendering
-            timerText.text = "Time left: " + SimulationManager.Instance.TimeLeft() + "s";
-            simulationDurationText.text = "Time left: " + SimulationManager.Instance.TimeLeftOfSimulation() + "s";
+            timerText.text = "Time left: " + RenderManager.Instance.TimeLeft + "s";
+            simulationDurationText.text = "Time left: " + RenderManager.Instance.TimeLeftOfRender + "s";
         }
         else 
         {
-            // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
-            if (SimulationManager.Instance.IsRendering && !SimulationManager.Instance.IsLastHRTF())
-            {
-                SimulationManager.Instance.ContinueRender(method: RenderMethod.AllSpeakers);
-                
-                SetUI();
-            }
-            else if (SimulationManager.Instance.IsRendering && SimulationManager.Instance.IsLastHRTF())
-            {
-                SimulationManager.Instance.StopRender();
-
-                SetUI();
-            }
+            HandleRenderMethod();
         }
     }
 
-    private void HandleRender()
+    private void HandleRenderMethod()
     {
-        if (SimulationManager.Instance.IsTiming() && SimulationManager.Instance.IsRendering)
+        switch (chosenMethod)
         {
-            // Update time while rendering
-            timerText.text = "Time left: " + SimulationManager.Instance.TimeLeft() + "s";
-            simulationDurationText.text = "Time left: " + SimulationManager.Instance.TimeLeftOfSimulation() + "s";
-        }
-        else 
-        {
-            // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
-            if (SimulationManager.Instance.IsRendering && !SimulationManager.Instance.IsLastSpeaker())
-            {
-                SimulationManager.Instance.ContinueRender(method: RenderMethod.LoneSpeaker);
-                
-                SetUI();
-            }
-            else if (SimulationManager.Instance.IsRendering && SimulationManager.Instance.IsLastSpeaker())
-            {
-                SimulationManager.Instance.StopRender();
+            case RenderMethod.AllSpeakers:
+                // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
+                if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
+                {
+                    RenderManager.Instance.ContinueRender(method: chosenMethod);
+                    
+                    SetUI();
+                }
+                else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA)
+                {
+                    RenderManager.Instance.StopRender();
 
-                SetUI();
-            }
+                    SetUI();
+                }
+
+                break;
+
+            case RenderMethod.LoneSpeaker:
+                // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
+                if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker)
+                {
+                    RenderManager.Instance.ContinueRender(method: RenderMethod.LoneSpeaker);
+                    
+                    SetUI();
+                }
+                else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
+                {
+                    RenderManager.Instance.StopRender();
+
+                    SetUI();
+                }
+
+                break;
         }
     }
 
@@ -127,31 +118,25 @@ public class SimulationView : MonoBehaviour
 
         simulationDurationText.text = "Idle state";
 
-        currentHRTFText.text = SimulationManager.Instance.CurrentHRTFName();
+        currentHRTFText.text = RenderManager.Instance.ActiveSOFAName;
 
         sampleRateText.text = "fs: " + AudioSettings.outputSampleRate.ToString();
 
-        bounceSlider.value = SimulationManager.Instance.GetRealTimeBounces();
+        bounceSlider.value = RenderManager.Instance.GetRealTimeBounces();
 
         bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
 
-        applyReflToHRTFToggle.isOn = SimulationManager.Instance.GetHRTFReflectionStatus();
-
-        /* Distances
-        distanceText.text = "d(source): " + GeometryManager.Instance.DistanceToSource() + " units (m)";
-        wallDistanceText.text = "d(wall): " + GeometryManager.Instance.DistanceToWall() + " units (m)";
-        reflectionDistanceText.text = "d(refl): " + GeometryManager.Instance.DistanceOfReflection() + " units (m)";
-        */
+        applyReflToHRTFToggle.isOn = RenderManager.Instance.GetHRTFReflectionStatus();
     }
 
     public void BounceSliderChanged(float value)
     {
-        SimulationManager.Instance.SetRealTimeBounces(value);
+        RenderManager.Instance.SetRealTimeBounces(value);
         bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
     }
 
     public void HRTFToggleChanged(bool isOn)
     {
-        SimulationManager.Instance.SetHRTFReflectionStatus(isOn);
+        RenderManager.Instance.SetHRTFReflectionStatus(isOn);
     }
 }

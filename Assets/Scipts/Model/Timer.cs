@@ -57,6 +57,6 @@ public class Timer : MonoBehaviour
     private float SetSimulationDuration()
     {
         // return (float)SimulationManager.Instance.AmountOfHRTFs() * duration;
-        return SimulationManager.Instance.SpeakerCount * SimulationManager.Instance.SimulationLength;
+        return RenderManager.Instance.SpeakerCount * RenderManager.Instance.SimulationLength;
     }
 }

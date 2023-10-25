@@ -1,13 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
 using SteamAudio;
 using UnityEngine;
 
 public class Speaker
 {
-    private readonly AudioSource audioSource;
-    private readonly SteamAudioSource steamAudioSource;
+    public readonly AudioSource audioSource;
+    public readonly SteamAudioSource steamAudioSource;
 
     public string Name { get; set; }
     public float Azimuth{ get; set; }

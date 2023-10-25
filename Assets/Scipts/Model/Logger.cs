@@ -4,7 +4,7 @@ using SteamAudio;
 
 public class Logger
 {
-    private string LogPath { get { return SimulationManager.Instance.folderPath + "log.txt"; } }
+    private string LogPath { get { return RenderManager.Instance.folderPath + "log.txt"; } }
     private string TimeStamp { get { return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); } }
 
     public void Log(Speaker speaker)
@@ -31,7 +31,7 @@ public class Logger
         writer.WriteLine("// --------------------");
         // TODO - Make enum from room manager to get the room sizes
         writer.WriteLine("Room size : 20x16 units");
-        writer.WriteLine($"Sample rate : { SimulationManager.Instance.SampleRate } Hz" );
+        writer.WriteLine($"Sample rate : { RenderManager.Instance.SampleRate } Hz" );
     }
 
     private void WriteSpeakerInfo(StreamWriter writer, Speaker speakerInfo)

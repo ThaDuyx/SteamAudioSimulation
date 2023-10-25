@@ -8,15 +8,13 @@ public enum RenderMethod
    LoneSpeaker,
    AllSpeakers
 }
-public class SimulationManager : MonoBehaviour
+public class RenderManager : MonoBehaviour
 {
     // Singleton object
-    public static SimulationManager Instance { get; private set; }
+    public static RenderManager Instance { get; private set; }
 
     [SerializeField] private AudioListener mainListener;
     private AudioSource[] audioSources;
-    private SteamAudioManager steamAudioManager;
-    private SteamAudioSource[] steamAudioSources;
     private List<Speaker> speakers;
     private Recorder recorder;
     private Timer timer;
@@ -24,11 +22,20 @@ public class SimulationManager : MonoBehaviour
     private Calculator calculator;
     private int activeSpeaker = 0;
     
-    public string folderPath = "/Users/duyx/Code/Jabra/python/renders";
-    public bool IsRendering { get; private set;}
-    public int SampleRate { get { return UnityEngine.AudioSettings.outputSampleRate; } }
     public int SpeakerCount { get { return speakers.Count; } }
-    public float SimulationLength { get { return 8.0f; } private set { value = SimulationLength; } }
+    public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
+    public bool IsLastSpeaker { get { return activeSpeaker == speakers.Count - 1; } }
+    public int SampleRate { get { return UnityEngine.AudioSettings.outputSampleRate; } }
+    public bool IsRendering { get; private set;}
+    public float SimulationLength { get { return 6.0f; } private set { value = SimulationLength; } }
+    public bool IsTiming { get { return timer.IsActive(); } }
+    public string TimeLeft { get { return timer.GetTimeLeft().ToString(); } }                                   
+    public string TimeLeftOfRender { get { return timer.GetTimeLeftOfSimulation().ToString(); } }
+    public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
+    public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
+    
+    // Should be modified for specific needs - TODO: Change to dynamic folder structure
+    public string folderPath = "/Users/duyx/Code/Jabra/python/renders";
 
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
@@ -57,18 +64,13 @@ public class SimulationManager : MonoBehaviour
 
     private void SetContent()
     {
-        SteamAudioManager[] steamAudioManagers = FindObjectsOfType<SteamAudioManager>();
-        steamAudioManager = steamAudioManagers[0];
-
-        steamAudioSources = FindObjectsOfType<SteamAudioSource>();
-        audioSources = FindObjectsOfType<AudioSource>();
-        
+        audioSources = FindObjectsOfType<AudioSource>();   
         speakers = new List<Speaker>();
         calculator = new Calculator();
         
         foreach (var audioSource in audioSources)
         {
-            var steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
+            SteamAudioSource steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
             Speaker speaker = new(audioSource, steamSource);
             speakers.Add(speaker);
 
@@ -80,12 +82,13 @@ public class SimulationManager : MonoBehaviour
         speakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));        
     }
 
+    // - Render Methods
     // Start rendering process
     public void StartRender(RenderMethod method)
     {
         IsRendering = true;
         SetRecordingPath();
-        UpdateHRTF();
+        UpdateSOFA();
         
         switch(method)
         {
@@ -111,7 +114,7 @@ public class SimulationManager : MonoBehaviour
         switch(method)
         {
             case RenderMethod.AllSpeakers:
-                UpdateHRTF();               // Moves to next HRTF
+                UpdateSOFA();               // Moves to next HRTF
                 ResetAudioSources();        
                 break;
 
@@ -131,12 +134,11 @@ public class SimulationManager : MonoBehaviour
     public void StopRender()
     {
         IsRendering = false;
-        steamAudioManager.currentHRTF = 0;
+        SteamAudioManager.Singleton.currentHRTF = 0;
         timer.Stop();
         recorder.StopRecording();
         
         logger.LogTitle();
-        
         foreach (var speaker in speakers)
         {
             logger.Log(speaker: speaker);
@@ -152,56 +154,28 @@ public class SimulationManager : MonoBehaviour
         }
     }
 
-    public string CurrentHRTFName()
-    {
-        return steamAudioManager.hrtfNames[steamAudioManager.currentHRTF]; // SOFA file name
-    }
-
-    public string CurrentSpeakerName()
-    {
-        return speakers[activeSpeaker].Name;
-    }
-
+    // - Audio Methods
     // Called when we want to move to the next HRTF in our list and return back to the first one when we are at the last
-    private void UpdateHRTF()
+    private void UpdateSOFA()
     {
-        if (IsLastHRTF())
+        if (IsLastSOFA)
         { 
-            steamAudioManager.currentHRTF = 0; 
+            SteamAudioManager.Singleton.currentHRTF = 0;
         }
         else 
         { 
-            steamAudioManager.currentHRTF++; 
+            SteamAudioManager.Singleton.currentHRTF++;
         }
-    }
-
-    // Returning true if the rendering process has reached the end of the HRTF array and concludes the render.
-    public bool IsLastHRTF()
-    {
-        return steamAudioManager.currentHRTF == steamAudioManager.hrtfNames.Length - 1;
-    }
-
-    // This method retrieves the amount of custom HRTF's in the scene
-    public int AmountOfHRTFs()
-    {
-        // -1 since the first HRTF in the manager is always the system default one which we do not care about.
-        return steamAudioManager.hrtfNames.Length - 1;
     }
     
     // Called when we want to begin a new render
     private void ResetAudioSources()
     {
-        for (int i = 0; i < audioSources.Length; i++)
+        foreach (Speaker speaker in speakers)
         {
-            audioSources[i].Stop();
-            audioSources[i].time = 0.0f;
-            audioSources[i].Play();
+            speaker.audioSource.Stop();
+            speaker.audioSource.Play();
         }
-    }
-
-    public bool IsLastSpeaker()
-    {
-        return activeSpeaker == speakers.Count - 1;
     }
 
     private void UpdateSpeakerAndPlay()
@@ -210,46 +184,9 @@ public class SimulationManager : MonoBehaviour
         PlayAudio();
     }
 
-    // Used for visualising the time on the view
-    public string TimeLeft()
-    {
-        return timer.GetTimeLeft().ToString();
-    }
-
-    public string TimeLeftOfSimulation()
-    {
-        return timer.GetTimeLeftOfSimulation().ToString();
-    }
-
-    public bool IsTiming()
-    {
-        return timer.IsActive();
-    }
-
-    public int GetRealTimeBounces() 
-    {
-        return SteamAudioSettings.Singleton.realTimeBounces;
-    }
-
-    public void SetRealTimeBounces(float value)
-    {
-        // Converting to integer
-        SteamAudioSettings.Singleton.realTimeBounces = (int)value;
-    }
-
-    public bool GetHRTFReflectionStatus()
-    {
-        return steamAudioSources[0].applyHRTFToReflections;
-    }
-
-    public void SetHRTFReflectionStatus(bool value)
-    {
-        steamAudioSources[0].applyHRTFToReflections = value;
-    }
-
     public void PlayAudio()
     {
-        audioSources[activeSpeaker].Play();
+        speakers[activeSpeaker].audioSource.Play();
     }
 
     public void PlayAllAudio()
@@ -263,7 +200,6 @@ public class SimulationManager : MonoBehaviour
     public void StopAudio()
     {
         audioSources[activeSpeaker].Stop();
-        audioSources[activeSpeaker].time = 0.0f;
     }
 
     public void ToggleAudio()
@@ -283,5 +219,26 @@ public class SimulationManager : MonoBehaviour
         string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
         folderPath += timeStamp + "/";
         System.IO.Directory.CreateDirectory(folderPath);
+    }
+
+       public int GetRealTimeBounces() 
+    {
+        return SteamAudioSettings.Singleton.realTimeBounces;
+    }
+
+    public void SetRealTimeBounces(float value)
+    {
+        // Converting to integer
+        SteamAudioSettings.Singleton.realTimeBounces = (int)value;
+    }
+
+    public bool GetHRTFReflectionStatus()
+    {
+        return speakers[activeSpeaker].steamAudioSource.applyHRTFToReflections;
+    }
+
+    public void SetHRTFReflectionStatus(bool value)
+    {
+        speakers[activeSpeaker].steamAudioSource.applyHRTFToReflections = value;
     }
 }

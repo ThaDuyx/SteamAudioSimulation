@@ -7,9 +7,9 @@ public class AudioCapturer : MonoBehaviour
     // OnAudioFilterRead is a MonoBehaviour method that has to be attached to a GameObject with a AudioListener or AudioSource
     private void OnAudioFilterRead(float [] data, int channels)
     {
-        if (SimulationManager.Instance != null && SimulationManager.Instance.IsRendering)
+        if (RenderManager.Instance != null && RenderManager.Instance.IsRendering)
         {
-            SimulationManager.Instance.TransmitData(data);
+            RenderManager.Instance.TransmitData(data);
 
             for (int i = 0; i < data.Length; i++) 
             {

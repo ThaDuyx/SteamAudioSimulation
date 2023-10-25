@@ -2650,10 +2650,7 @@ MonoBehaviour:
   timerText: {fileID: 957852579}
   currentHRTFText: {fileID: 559583818}
   sampleRateText: {fileID: 1764301232}
-  distanceText: {fileID: 177294786}
-  wallDistanceText: {fileID: 1623946281}
   simulationDurationText: {fileID: 224720546}
-  reflectionDistanceText: {fileID: 1795919720}
   bounceSlider: {fileID: 1720907310}
   applyReflToHRTFToggle: {fileID: 1243148747}
 --- !u!1 &878355973
@@ -4537,7 +4534,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1613797726
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5271,6 +5268,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainListener: {fileID: 167323487}
+  folderPath: /Users/duyx/Code/Jabra/python/renders
 --- !u!1 &1944325266
 GameObject:
   m_ObjectHideFlags: 0
