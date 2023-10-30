@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using SteamAudio;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public enum RenderMethod
 {
-   LoneSpeaker,
-   AllSpeakers
+   OneByOne,
+   AllAtOnce
 }
 public class RenderManager : MonoBehaviour
 {
@@ -14,7 +15,6 @@ public class RenderManager : MonoBehaviour
     public static RenderManager Instance { get; private set; }
 
     [SerializeField] private AudioListener mainListener;
-    private AudioSource[] audioSources;
     private List<Speaker> speakers;
     private Recorder recorder;
     private Timer timer;
@@ -22,6 +22,7 @@ public class RenderManager : MonoBehaviour
     private Calculator calculator;
     private int activeSpeaker = 0;
     
+    public int selectedSpeaker = 0;
     public int SpeakerCount { get { return speakers.Count; } }
     public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
     public bool IsLastSpeaker { get { return activeSpeaker == speakers.Count - 1; } }
@@ -55,25 +56,28 @@ public class RenderManager : MonoBehaviour
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function / Constructor of the class
     void Start()
-    {   
-        recorder = new Recorder(UnityEngine.AudioSettings.outputSampleRate);
+    {
+        recorder = new Recorder(outputSampleRate: SampleRate);
         logger = new Logger();
         timer = gameObject.AddComponent<Timer>();
-        audioSources = FindObjectsOfType<AudioSource>();
     }
 
     private void SetContent()
     {
-        audioSources = FindObjectsOfType<AudioSource>();   
+        // Fetching audio objects and pairing them in a speaker model
+        AudioSource[] audioSources = FindObjectsOfType<AudioSource>();   
         speakers = new List<Speaker>();
+
         calculator = new Calculator();
         
         foreach (var audioSource in audioSources)
         {
+            // Initialising speaker list
             SteamAudioSource steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
             Speaker speaker = new(audioSource, steamSource);
             speakers.Add(speaker);
 
+            // Calculating geometry
             speaker.DistanceToReceiver = calculator.CalculateDistanceToReceiver(mainListener.transform, audioSource.transform);
             speaker.Azimuth = calculator.CalculateAzimuth(mainListener.transform, audioSource.transform);
             speaker.Elevation = calculator.CalculateElevation(mainListener.transform, audioSource.transform);
@@ -92,12 +96,14 @@ public class RenderManager : MonoBehaviour
         
         switch(renderMethod)
         {
-            case RenderMethod.AllSpeakers:
-                ResetAndPlayAudioSources();
+            case RenderMethod.AllAtOnce:
+                RewindAndPlayAudioSources();
                 break;
-            case RenderMethod.LoneSpeaker:
+
+            case RenderMethod.OneByOne:
                 PlayAudio();
                 break;
+
             default:
                 break;
         }
@@ -109,24 +115,26 @@ public class RenderManager : MonoBehaviour
     // Updates the state to continue rendering with the next HRTF in the list
     public void ContinueRender(RenderMethod renderMethod)
     {
-        recorder.ToggleRecording();         // Stop previous recording
+        recorder.ToggleRecording();             // Stop previous recording
 
         switch(renderMethod)
         {
-            case RenderMethod.AllSpeakers:
-                UpdateSOFA();               // Moves to next HRTF
-                ResetAndPlayAudioSources();        
+            case RenderMethod.AllAtOnce:
+                UpdateSOFA();                   // Moves to next HRTF
+                RewindAndPlayAudioSources();        
                 break;
 
-            case RenderMethod.LoneSpeaker:
-                SelectNextSpeakerAndPlay();     // Moves to next speaker            
+            case RenderMethod.OneByOne:
+                SelectNextSpeaker();            // Moves to next speaker  
+
+                PlayAudio();
                 break;
 
             default:
                 break;
         }
 
-        recorder.ToggleRecording();         // Start new recording
+        recorder.ToggleRecording();             // Start new recording
         timer.Begin(SimulationLength);
     }
 
@@ -169,7 +177,7 @@ public class RenderManager : MonoBehaviour
     }
     
     // Called when we want to begin a new render
-    private void ResetAndPlayAudioSources()
+    private void RewindAndPlayAudioSources()
     {
         foreach (Speaker speaker in speakers)
         {
@@ -178,10 +186,9 @@ public class RenderManager : MonoBehaviour
         }
     }
 
-    private void SelectNextSpeakerAndPlay()
+    private void SelectNextSpeaker()
     {
         activeSpeaker++;
-        PlayAudio();
     }
 
     public void PlayAudio()
@@ -197,11 +204,28 @@ public class RenderManager : MonoBehaviour
         }
     }
 
+    public void StopAudio()
+    {
+        speakers[selectedSpeaker].audioSource.Stop();
+    }
+
     public void StopAllAudio()
     {
         foreach (Speaker speaker in speakers)
         {
             speaker.audioSource.Stop();
+        }
+    }
+
+    public void ToggleAudio()
+    {
+        if (speakers[selectedSpeaker].audioSource.isPlaying)
+        {
+            StopAudio();
+        }
+        else 
+        {
+            PlayAudio();
         }
     }
 
@@ -237,24 +261,44 @@ public class RenderManager : MonoBehaviour
         System.IO.Directory.CreateDirectory(folderPath);
     }
 
-    public int GetRealTimeBounces() 
+    public int RealTimeBounces
     {
-        return SteamAudioSettings.Singleton.realTimeBounces;
+        get { return SteamAudioSettings.Singleton.realTimeBounces; }
+        set { SteamAudioSettings.Singleton.realTimeBounces = value;}
     }
 
-    public void SetRealTimeBounces(float value)
+    public bool ApplyHRTFToReflections
     {
-        // Converting to integer
-        SteamAudioSettings.Singleton.realTimeBounces = (int)value;
+        get { return speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections; }
+        set { speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections = value; }
+    }
+    public float Volume
+    {
+        get { return speakers[selectedSpeaker].audioSource.volume; }
+        set { speakers[selectedSpeaker].audioSource.volume = value; }
     }
 
-    public bool GetHRTFReflectionStatus()
+    public float DirectMixLevel
     {
-        return speakers[activeSpeaker].steamAudioSource.applyHRTFToReflections;
+        get { return speakers[selectedSpeaker].steamAudioSource.directMixLevel; }
+        set { speakers[selectedSpeaker].steamAudioSource.directMixLevel = value; }
     }
 
-    public void SetHRTFReflectionStatus(bool value)
+    public float ReflectionMixLevel
     {
-        speakers[activeSpeaker].steamAudioSource.applyHRTFToReflections = value;
+        get { return speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel; }
+        set { speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; }
+    }
+    
+    public string[] GetSpeakerNames()
+    {
+        string[] names = new string[speakers.Count];
+
+        for (int i = 0; i < speakers.Count; i++)
+        {
+            names[i] = speakers[i].Name;
+        }
+        
+        return names;
     }
 }

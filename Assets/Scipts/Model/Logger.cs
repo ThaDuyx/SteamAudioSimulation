@@ -37,20 +37,20 @@ public class Logger
     private void WriteSpeakerInfo(StreamWriter writer, Speaker speakerInfo)
     {
         writer.WriteLine($"\nName : { speakerInfo.Name }");
+        writer.WriteLine($"        Audio Clip : { speakerInfo.audioSource.clip.name }");
         writer.WriteLine($"    Geometry : ");
         writer.WriteLine($"        Distance To Receiver : { speakerInfo.DistanceToReceiver } units");
-        writer.WriteLine($"        Audio Clip : { speakerInfo.ClipName()}");
         writer.WriteLine($"        Azimuth angle : { speakerInfo.Azimuth }");
         writer.WriteLine($"        Elevation angle : { speakerInfo.Elevation }");
         
         writer.WriteLine($"\n    Parameters : ");
         writer.WriteLine($"        Real Time Bounces : { SteamAudioSettings.Singleton.realTimeBounces }");
-        writer.WriteLine($"        Volume: { speakerInfo.Volume() }");
-        writer.WriteLine($"        Direct Mix Level : { speakerInfo.DirectMixLevel() }");
-        writer.WriteLine($"        Reflection Mix Level : { speakerInfo.ReflectionMixLevel() } \n");
-        writer.WriteLine($"        HRTF Applied To Reflections? : { (speakerInfo.HRTFAppliedToReflection() ? "yes" : "no") }");
-        writer.WriteLine($"        Distance Attenuation Applied : { (speakerInfo.DistanceAttenuation() ? "yes" : "no") }");
-        writer.WriteLine($"        Air Absorption Applied : { (speakerInfo.AirAbsorption() ? "yes" : "no") }");
+        writer.WriteLine($"        Volume: { speakerInfo.audioSource.volume }");
+        writer.WriteLine($"        Direct Mix Level : { speakerInfo.steamAudioSource.directMixLevel }");
+        writer.WriteLine($"        Reflection Mix Level : { speakerInfo.steamAudioSource.reflectionsMixLevel } \n");
+        writer.WriteLine($"        HRTF Applied To Reflections? : { (speakerInfo.steamAudioSource.applyHRTFToReflections ? "yes" : "no") }");
+        writer.WriteLine($"        Distance Attenuation Applied : { (speakerInfo.steamAudioSource.distanceAttenuation ? "yes" : "no") }");
+        writer.WriteLine($"        Air Absorption Applied : { (speakerInfo.steamAudioSource.airAbsorption ? "yes" : "no") }");
         writer.WriteLine("\n\n");
     }
 }

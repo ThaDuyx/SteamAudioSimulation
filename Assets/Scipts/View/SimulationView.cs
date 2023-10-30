@@ -1,20 +1,23 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class SimulationView : MonoBehaviour
 {
-    [SerializeField] private TMP_Text timerText;
-    [SerializeField] private TMP_Text currentHRTFText;
-    [SerializeField] private TMP_Text sampleRateText;
-    [SerializeField] private TMP_Text simulationDurationText;
-    [SerializeField] private Slider bounceSlider;
+    [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
+    [SerializeField] private TMP_Dropdown speakerDropdown, renderMethodDropdown, roomDropdown;
+    [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle;
-    private readonly RenderMethod chosenMethod = RenderMethod.LoneSpeaker;
+    
+    private RenderMethod chosenMethod = RenderMethod.OneByOne;
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
     {
+        SetContent();
+
         SetUI();
     }
 
@@ -34,6 +37,11 @@ public class SimulationView : MonoBehaviour
             ToggleRender();
 
             SetUI();
+        }
+
+        if (Input.GetKeyDown(KeyCode.O))
+        {
+            RenderManager.Instance.ToggleAudio();
         }
 
         if (Input.GetKeyDown(KeyCode.P))
@@ -77,10 +85,34 @@ public class SimulationView : MonoBehaviour
         {
             RenderManager.Instance.StopRender();
         }
-        else 
+        else
         {
             RenderManager.Instance.StartRender(renderMethod: chosenMethod);
         }
+    }
+
+    private void SetContent()
+    {
+        renderMethodDropdown.options.Clear();
+        foreach (string method in Enum.GetNames(typeof(RenderMethod)))
+        {
+            renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
+        }
+        renderMethodDropdown.RefreshShownValue();
+
+        speakerDropdown.options.Clear();
+        foreach (string speakerName in RenderManager.Instance.GetSpeakerNames())
+        {
+            speakerDropdown.options.Add(new TMP_Dropdown.OptionData() { text = speakerName });
+        }
+        speakerDropdown.RefreshShownValue();
+
+        roomDropdown.options.Clear();
+        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+        {
+            roomDropdown.options.Add(new TMP_Dropdown.OptionData() {text = "Room " + i});
+        }
+        roomDropdown.RefreshShownValue();
     }
 
     // Updates elements in the UI
@@ -90,25 +122,72 @@ public class SimulationView : MonoBehaviour
 
         simulationDurationText.text = "Idle state";
 
-        currentHRTFText.text = RenderManager.Instance.ActiveSOFAName;
+        currentSOFAText.text = RenderManager.Instance.ActiveSOFAName;
 
         sampleRateText.text = "fs: " + AudioSettings.outputSampleRate.ToString();
 
-        bounceSlider.value = RenderManager.Instance.GetRealTimeBounces();
-
+        bounceSlider.value = RenderManager.Instance.RealTimeBounces;
         bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
 
-        applyReflToHRTFToggle.isOn = RenderManager.Instance.GetHRTFReflectionStatus();
+        volumeSlider.value = RenderManager.Instance.Volume;
+        volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
+
+        directMixLevelSlider.value = RenderManager.Instance.DirectMixLevel;
+        directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
+
+        reflectionMixLevelSlider.value = RenderManager.Instance.ReflectionMixLevel;
+        reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
+
+        applyReflToHRTFToggle.isOn = RenderManager.Instance.ApplyHRTFToReflections;
+    }
+
+    public void SpeakerDropdownChanged(int index)
+    {
+        RenderManager.Instance.selectedSpeaker = index;
+        SetUI();
+    }
+    
+    public void HRTFToggleChanged(bool isOn)
+    {
+        RenderManager.Instance.ApplyHRTFToReflections = isOn;
     }
 
     public void BounceSliderChanged(float value)
     {
-        RenderManager.Instance.SetRealTimeBounces(value);
+        bounceSlider.value = value;
         bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
     }
-
-    public void HRTFToggleChanged(bool isOn)
+    public void BounceSliderEndDrag()
     {
-        RenderManager.Instance.SetHRTFReflectionStatus(isOn);
+        RenderManager.Instance.RealTimeBounces = (int)bounceSlider.value;
+        RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: RoomManager.Instance.ActiveSceneIndex);
+    }
+
+    public void VolumeSliderChanged(float value)
+    {
+        RenderManager.Instance.Volume = value;
+        volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
+    }
+
+    public void DirectMixLevelSliderChanged(float value)
+    {
+        RenderManager.Instance.DirectMixLevel = value;
+        directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
+    }
+
+    public void ReflectionMixLevelSliderChanged(float value)
+    {
+        RenderManager.Instance.ReflectionMixLevel = value;
+        reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
+    }
+
+    public void RenderMethodDropDownChanged(int index)
+    {
+        chosenMethod = (RenderMethod)index;
+    }
+
+    public void RoomDropdownChanged(int index)
+    {
+        RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: index);
     }
 }
