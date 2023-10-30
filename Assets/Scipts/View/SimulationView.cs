@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -189,5 +190,10 @@ public class SimulationView : MonoBehaviour
     public void RoomDropdownChanged(int index)
     {
         RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: index);
+    }
+
+    public void SliderEndDrag()
+    {
+        RenderManager.Instance.PersistRoom();
     }
 }

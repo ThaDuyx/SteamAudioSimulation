@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using SteamAudio;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public enum RenderMethod
@@ -21,6 +20,7 @@ public class RenderManager : MonoBehaviour
     private Logger logger;
     private Calculator calculator;
     private int activeSpeaker = 0;
+    private Room persistedRoom;
     
     public int selectedSpeaker = 0;
     public int SpeakerCount { get { return speakers.Count; } }
@@ -67,7 +67,7 @@ public class RenderManager : MonoBehaviour
         // Fetching audio objects and pairing them in a speaker model
         AudioSource[] audioSources = FindObjectsOfType<AudioSource>();   
         speakers = new List<Speaker>();
-
+        
         calculator = new Calculator();
         
         foreach (var audioSource in audioSources)
@@ -82,8 +82,16 @@ public class RenderManager : MonoBehaviour
             speaker.Azimuth = calculator.CalculateAzimuth(mainListener.transform, audioSource.transform);
             speaker.Elevation = calculator.CalculateElevation(mainListener.transform, audioSource.transform);
         }
+        
+        // Sorting speakers after name
+        speakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));
 
-        speakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));        
+        // Try to load a persisted room or else fetch a default one.
+        persistedRoom = RoomManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
+
+        speakers[selectedSpeaker].audioSource.volume = persistedRoom.sources[selectedSpeaker].volume;
+        speakers[selectedSpeaker].steamAudioSource.directMixLevel = persistedRoom.sources[selectedSpeaker].directMixLevel;
+        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = persistedRoom.sources[selectedSpeaker].reflectionMixLevel;
     }
 
     // - Render Methods
@@ -91,7 +99,9 @@ public class RenderManager : MonoBehaviour
     public void StartRender(RenderMethod renderMethod)
     {
         IsRendering = true;
+        
         SetRecordingPath();
+        
         UpdateSOFA();
         
         switch(renderMethod)
@@ -254,13 +264,6 @@ public class RenderManager : MonoBehaviour
         return false;
     }
 
-    private void SetRecordingPath()
-    {
-        string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
-        folderPath += timeStamp + "/";
-        System.IO.Directory.CreateDirectory(folderPath);
-    }
-
     public int RealTimeBounces
     {
         get { return SteamAudioSettings.Singleton.realTimeBounces; }
@@ -289,6 +292,15 @@ public class RenderManager : MonoBehaviour
         get { return speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel; }
         set { speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; }
     }
+
+    public void PersistRoom()
+    {
+        persistedRoom.sources[selectedSpeaker].volume = Volume;
+        persistedRoom.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
+        persistedRoom.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
+        
+        RoomManager.Instance.SaveRoomData(room: persistedRoom);
+    }
     
     public string[] GetSpeakerNames()
     {
@@ -300,5 +312,12 @@ public class RenderManager : MonoBehaviour
         }
         
         return names;
+    }
+
+    private void SetRecordingPath()
+    {
+        string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
+        folderPath += timeStamp + "/";
+        System.IO.Directory.CreateDirectory(folderPath);
     }
 }

@@ -1,12 +1,9 @@
+using System.IO;
 using UnityEngine;
-
-public class KeysEnum
-{
-    public static readonly string ApplyHRTFToReflections = "applyHRTFToReflections";
-}
 
 public class UserPrefsManager : MonoBehaviour
 {
+     
     public static UserPrefsManager Instance { get; private set; }
 
     void Awake()
@@ -19,11 +16,5 @@ public class UserPrefsManager : MonoBehaviour
         { 
             Instance = this; 
         }
-    }
-
-    public bool HRTFSettings 
-    {
-        get { return PlayerPrefs.GetInt(KeysEnum.ApplyHRTFToReflections) == 0; }
-        set { PlayerPrefs.SetInt(KeysEnum.ApplyHRTFToReflections, value == true ? 0 : 1); }
     }
 }
