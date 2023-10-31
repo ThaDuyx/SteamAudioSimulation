@@ -16,25 +16,24 @@ public class RenderManager : MonoBehaviour
     private AudioListener receiver;
     private List<Speaker> speakers;
     private Recorder recorder;
+    private Room room;
     private Timer timer;
     private Logger logger;
     private Calculator calculator;
     private int activeSpeaker = 0;
-    private Room persistedRoom;
-    
-    public int selectedSpeaker = 0;
+    private int selectedSpeaker = 0;
 
     public int SpeakerCount { get { return speakers.Count; } }
     public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
     public bool IsLastSpeaker { get { return activeSpeaker == speakers.Count - 1; } }
     public int SampleRate { get { return UnityEngine.AudioSettings.outputSampleRate; } }
-    public bool IsRendering { get; private set;}
+    public bool IsRendering { get; private set; }
     public float SimulationLength { get { return 6.0f; } private set { value = SimulationLength; } }
     public bool IsTiming { get { return timer.IsActive(); } }
     public string TimeLeft { get { return timer.GetTimeLeft().ToString(); } }                                   
     public string TimeLeftOfRender { get { return timer.GetTimeLeftOfSimulation().ToString(); } }
-    public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
     public int SOFACount { get { return SteamAudioManager.Singleton.hrtfNames.Length; }}
+    public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
     
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
@@ -92,11 +91,11 @@ public class RenderManager : MonoBehaviour
         speakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));
 
         // Try to load a persisted room or else fetch a default one.
-        persistedRoom = DataManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
+        room = DataManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
 
-        speakers[selectedSpeaker].audioSource.volume = persistedRoom.sources[selectedSpeaker].volume;
-        speakers[selectedSpeaker].steamAudioSource.directMixLevel = persistedRoom.sources[selectedSpeaker].directMixLevel;
-        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = persistedRoom.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
+        speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
+        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
     }
 
     // - Render Methods
@@ -114,7 +113,6 @@ public class RenderManager : MonoBehaviour
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
-                Debug.Log("Yurr");
                 RewindAndPlayAudioSources();    // Resets and play every audio source in the current scene
                 break;
 
@@ -138,7 +136,6 @@ public class RenderManager : MonoBehaviour
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
-                Debug.Log("Yurr");
                 UpdateSOFA();                   // Moves to next HRTF
                 RewindAndPlayAudioSources();        
                 break;
@@ -305,11 +302,11 @@ public class RenderManager : MonoBehaviour
 
     public void PersistRoom()
     {
-        persistedRoom.sources[selectedSpeaker].volume = Volume;
-        persistedRoom.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
-        persistedRoom.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
+        room.sources[selectedSpeaker].volume = Volume;
+        room.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
+        room.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
         
-        DataManager.Instance.SaveRoomData(room: persistedRoom);
+        DataManager.Instance.SaveRoomData(room: room);
     }
     
     public string[] GetSpeakerNames()
@@ -328,9 +325,9 @@ public class RenderManager : MonoBehaviour
     {
         selectedSpeaker = index;
 
-        speakers[selectedSpeaker].audioSource.volume = persistedRoom.sources[selectedSpeaker].volume;
-        speakers[selectedSpeaker].steamAudioSource.directMixLevel = persistedRoom.sources[selectedSpeaker].directMixLevel;
-        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = persistedRoom.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
+        speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
+        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
     }
 
     private void SetRecordingPath()

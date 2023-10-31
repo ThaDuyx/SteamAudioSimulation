@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -13,6 +12,7 @@ public class RoomManager : MonoBehaviour
 
     public int SceneCounter { get { return SceneManager.sceneCountInBuildSettings; } }
     public int ActiveSceneIndex { get { return SceneManager.GetSceneAt(1).buildIndex; } }
+    public string ActiveSceneName { get { return SceneManager.GetSceneAt(1).name; } }
 
     private void Awake()
     {
@@ -24,12 +24,17 @@ public class RoomManager : MonoBehaviour
         {
             Instance = this;
         }
+
+        if (SceneManager.sceneCount == 1)
+        {
+            LoadDefaultScene();
+        }
     }
 
     public void ChangeScene(int sceneIndexInBuildSettings)
     {
-        // Unload previous scene asynchronously 
-        StartCoroutine(UnloadActiveScene()); 
+        // Unload previous scene asynchronously and issue call-back
+        StartCoroutine(UnloadActiveScene());
         
         // Load the newly selected scene
         SceneManager.LoadScene(sceneIndexInBuildSettings, LoadSceneMode.Additive);
@@ -48,5 +53,10 @@ public class RoomManager : MonoBehaviour
         
         // Calling call-back function used on the view
         OnSceneUnloaded?.Invoke();
+    }
+
+    private void LoadDefaultScene()
+    {
+        SceneManager.LoadScene(1, LoadSceneMode.Additive);
     }
 }

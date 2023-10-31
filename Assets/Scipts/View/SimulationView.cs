@@ -12,7 +12,6 @@ public class SimulationView : MonoBehaviour
     [SerializeField] private Toggle applyReflToHRTFToggle;
     
     private RenderMethod chosenMethod = RenderMethod.OneByOne;
-    private bool renderIsActivated = false; 
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
@@ -103,18 +102,17 @@ public class SimulationView : MonoBehaviour
     {     
         if (RenderManager.Instance.IsRendering)
         {
-            renderIsActivated = false;
             RenderManager.Instance.StopRender();
         }
         else
         {
-            renderIsActivated = true;
             RenderManager.Instance.StartRender(renderMethod: chosenMethod);
         }
     }
 
     private void SetContent()
     {
+        // feed dropdowns with data
         renderMethodDropdown.options.Clear();
         foreach (string method in Enum.GetNames(typeof(RenderMethod)))
         {
