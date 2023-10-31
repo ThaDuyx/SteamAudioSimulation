@@ -38,7 +38,7 @@ public class DataManager : MonoBehaviour
     // Fetch data from a persisted room or create a default setting if it doesn't exist
     public Room LoadRoomData(int amountOfSpeakers)
     {
-        int activeRoomIndex = SceneManager.GetActiveScene().buildIndex;
+        int activeRoomIndex = SceneManager.GetSceneAt(1).buildIndex;
 
         if (File.Exists(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json"))
         {
@@ -53,7 +53,7 @@ public class DataManager : MonoBehaviour
             List<Source> sources = new();
             for (int i = 0; i < amountOfSpeakers; i++)
             {
-                sources.Add(new Source(name: "speaker" + (i+1).ToString(), volume: 0.091f, directMixLevel: 0.2f, reflectionMixLevel: 1.0f));
+                sources.Add(new Source(name: "speaker" + (i + 1).ToString(), volume: 0.091f, directMixLevel: 0.2f, reflectionMixLevel: 1.0f));
             }
             
             

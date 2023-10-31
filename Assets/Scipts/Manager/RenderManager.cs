@@ -13,7 +13,7 @@ public class RenderManager : MonoBehaviour
     // Singleton object
     public static RenderManager Instance { get; private set; }
 
-    [SerializeField] private AudioListener mainListener;
+    private AudioListener receiver;
     private List<Speaker> speakers;
     private Recorder recorder;
     private Timer timer;
@@ -34,6 +34,7 @@ public class RenderManager : MonoBehaviour
     public string TimeLeft { get { return timer.GetTimeLeft().ToString(); } }                                   
     public string TimeLeftOfRender { get { return timer.GetTimeLeftOfSimulation().ToString(); } }
     public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
+    public int SOFACount { get { return SteamAudioManager.Singleton.hrtfNames.Length; }}
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
     
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
@@ -65,8 +66,11 @@ public class RenderManager : MonoBehaviour
 
     private void SetContent()
     {
+        // Find Receiver in scene
+        receiver = FindObjectOfType<AudioListener>();
+
         // Fetching audio objects and pairing them in a speaker model
-        AudioSource[] audioSources = FindObjectsOfType<AudioSource>();   
+        AudioSource[] audioSources = FindObjectsOfType<AudioSource>();
         speakers = new List<Speaker>();
         
         calculator = new Calculator();
@@ -79,9 +83,9 @@ public class RenderManager : MonoBehaviour
             speakers.Add(speaker);
 
             // Calculating geometry
-            speaker.DistanceToReceiver = calculator.CalculateDistanceToReceiver(mainListener.transform, audioSource.transform);
-            speaker.Azimuth = calculator.CalculateAzimuth(mainListener.transform, audioSource.transform);
-            speaker.Elevation = calculator.CalculateElevation(mainListener.transform, audioSource.transform);
+            speaker.DistanceToReceiver = calculator.CalculateDistanceToReceiver(receiver.transform, audioSource.transform);
+            speaker.Azimuth = calculator.CalculateAzimuth(receiver.transform, audioSource.transform);
+            speaker.Elevation = calculator.CalculateElevation(receiver.transform, audioSource.transform);
         }
         
         // Sorting speakers after name
@@ -99,20 +103,23 @@ public class RenderManager : MonoBehaviour
     // Start rendering process
     public void StartRender(RenderMethod renderMethod)
     {
+        Debug.Log(renderMethod);
+
         IsRendering = true;
         
-        SetRecordingPath();
+        SetRecordingPath();                     // updates the output for recordings
         
-        UpdateSOFA();
+        UpdateSOFA();                           // increments array of SOFA files to our
         
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
-                RewindAndPlayAudioSources();
+                Debug.Log("Yurr");
+                RewindAndPlayAudioSources();    // Resets and play every audio source in the current scene
                 break;
 
             case RenderMethod.OneByOne:
-                PlayAudio();
+                PlayAudio();                    // Plays the first speaker
                 break;
 
             default:
@@ -120,7 +127,7 @@ public class RenderManager : MonoBehaviour
         }
 
         recorder.ToggleRecording();
-        timer.Begin(SimulationLength);
+        timer.Begin(SimulationLength, renderMethod);
     }
 
     // Updates the state to continue rendering with the next HRTF in the list
@@ -131,6 +138,7 @@ public class RenderManager : MonoBehaviour
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
+                Debug.Log("Yurr");
                 UpdateSOFA();                   // Moves to next HRTF
                 RewindAndPlayAudioSources();        
                 break;
@@ -146,7 +154,7 @@ public class RenderManager : MonoBehaviour
         }
 
         recorder.ToggleRecording();             // Start new recording
-        timer.Begin(SimulationLength);
+        timer.Begin(SimulationLength, renderMethod);          // Start new timer
     }
 
     // Stop rendering process
@@ -212,6 +220,7 @@ public class RenderManager : MonoBehaviour
         foreach (Speaker speaker in speakers)
         {
             speaker.audioSource.Play();
+            Debug.Log(speaker.Name + " playing");
         }
     }
 

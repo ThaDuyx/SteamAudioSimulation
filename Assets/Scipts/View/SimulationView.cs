@@ -26,11 +26,8 @@ public class SimulationView : MonoBehaviour
     void Update()
     {
         HandleKeyStrokes();
-
-        if (renderIsActivated)
-        {
-            HandleRender();
-        }
+        
+        HandleRender();
     }
 
     // Method for handling whenever specific keys are pressed on the keyboard.
@@ -50,7 +47,8 @@ public class SimulationView : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.P))
         {
-            RenderManager.Instance.ToggleAllAudio();
+            // RenderManager.Instance.ToggleAllAudio();
+            SetUI();
         }
     }
 
@@ -65,34 +63,52 @@ public class SimulationView : MonoBehaviour
         }
         else
         {
-            if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA
-            || RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker)
-                {
-                    RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
-                    
-                    SetUI();
-                }
-                else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA
-                || RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
-                {
-                    RenderManager.Instance.StopRender();
+            switch (chosenMethod)
+            {
+                case RenderMethod.AllAtOnce:
+                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
+                    {
+                        RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
+                        
+                        SetUI();
+                    }
+                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA)
+                    {
+                        RenderManager.Instance.StopRender();
 
-                    SetUI();
-                }
+                        SetUI();
+                    }
+                    break;
+
+                case RenderMethod.OneByOne:
+                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker) 
+                    {
+                        RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
+                        
+                        SetUI();
+                    }
+                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
+                    {
+                        RenderManager.Instance.StopRender();
+
+                        SetUI();
+                    }
+                    break;
+            }
         }
     }
 
     // Either starts or stops the simulation dependent on which state currently is active.
     private void ToggleRender()
-    {
-        renderIsActivated = !renderIsActivated;
-         
+    {     
         if (RenderManager.Instance.IsRendering)
         {
+            renderIsActivated = false;
             RenderManager.Instance.StopRender();
         }
         else
         {
+            renderIsActivated = true;
             RenderManager.Instance.StartRender(renderMethod: chosenMethod);
         }
     }
@@ -116,9 +132,12 @@ public class SimulationView : MonoBehaviour
         roomDropdown.options.Clear();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
         {
-            roomDropdown.options.Add(new TMP_Dropdown.OptionData() { text = "Room " + i });
+            // We don't want the first scene since it is just the Canvas UI
+            if (i != 0)
+            {
+                roomDropdown.options.Add(new TMP_Dropdown.OptionData() { text = "Room " + i });
+            }
         }
-        roomDropdown.value = SceneManager.GetActiveScene().buildIndex;
         roomDropdown.RefreshShownValue();
     }
 
@@ -167,6 +186,7 @@ public class SimulationView : MonoBehaviour
     public void BounceSliderEndDrag()
     {
         RenderManager.Instance.RealTimeBounces = (int)bounceSlider.value;
+
         RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: RoomManager.Instance.ActiveSceneIndex);
     }
 
@@ -195,10 +215,18 @@ public class SimulationView : MonoBehaviour
 
     public void RoomDropdownChanged(int index)
     {
-        if (index != SceneManager.GetActiveScene().buildIndex)
-        {
-            RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: index);
-        }
+        // Plus one since we're ignoring the first scene being the Canvas UI
+        RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: index + 1);
+        
+        // Call-back function that reloads the UI with new data when scenes has been changed
+        RoomManager.OnSceneUnloaded += HandleSceneUnloaded;
+    }
+
+    private void HandleSceneUnloaded()
+    {
+        speakerDropdown.value = 0;
+
+        SetUI();
     }
 
     public void SliderEndDrag()
