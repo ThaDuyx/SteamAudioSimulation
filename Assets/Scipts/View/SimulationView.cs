@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -13,6 +12,7 @@ public class SimulationView : MonoBehaviour
     [SerializeField] private Toggle applyReflToHRTFToggle;
     
     private RenderMethod chosenMethod = RenderMethod.OneByOne;
+    private bool renderIsActivated = false; 
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
@@ -27,7 +27,10 @@ public class SimulationView : MonoBehaviour
     {
         HandleKeyStrokes();
 
-        HandleRender();
+        if (renderIsActivated)
+        {
+            HandleRender();
+        }
     }
 
     // Method for handling whenever specific keys are pressed on the keyboard.
@@ -60,7 +63,7 @@ public class SimulationView : MonoBehaviour
             timerText.text = "Time left: " + RenderManager.Instance.TimeLeft + "s";
             simulationDurationText.text = "Time left: " + RenderManager.Instance.TimeLeftOfRender + "s";
         }
-        else 
+        else
         {
             if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA
             || RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker)
@@ -82,6 +85,8 @@ public class SimulationView : MonoBehaviour
     // Either starts or stops the simulation dependent on which state currently is active.
     private void ToggleRender()
     {
+        renderIsActivated = !renderIsActivated;
+         
         if (RenderManager.Instance.IsRendering)
         {
             RenderManager.Instance.StopRender();
@@ -111,8 +116,9 @@ public class SimulationView : MonoBehaviour
         roomDropdown.options.Clear();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
         {
-            roomDropdown.options.Add(new TMP_Dropdown.OptionData() {text = "Room " + i});
+            roomDropdown.options.Add(new TMP_Dropdown.OptionData() { text = "Room " + i });
         }
+        roomDropdown.value = SceneManager.GetActiveScene().buildIndex;
         roomDropdown.RefreshShownValue();
     }
 
@@ -144,7 +150,7 @@ public class SimulationView : MonoBehaviour
 
     public void SpeakerDropdownChanged(int index)
     {
-        RenderManager.Instance.selectedSpeaker = index;
+        RenderManager.Instance.SetSelectedSpeacker(index);
         SetUI();
     }
     
@@ -189,7 +195,10 @@ public class SimulationView : MonoBehaviour
 
     public void RoomDropdownChanged(int index)
     {
-        RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: index);
+        if (index != SceneManager.GetActiveScene().buildIndex)
+        {
+            RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: index);
+        }
     }
 
     public void SliderEndDrag()

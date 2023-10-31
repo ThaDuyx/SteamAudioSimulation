@@ -23,6 +23,7 @@ public class RenderManager : MonoBehaviour
     private Room persistedRoom;
     
     public int selectedSpeaker = 0;
+
     public int SpeakerCount { get { return speakers.Count; } }
     public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
     public bool IsLastSpeaker { get { return activeSpeaker == speakers.Count - 1; } }
@@ -87,7 +88,7 @@ public class RenderManager : MonoBehaviour
         speakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));
 
         // Try to load a persisted room or else fetch a default one.
-        persistedRoom = RoomManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
+        persistedRoom = DataManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
 
         speakers[selectedSpeaker].audioSource.volume = persistedRoom.sources[selectedSpeaker].volume;
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = persistedRoom.sources[selectedSpeaker].directMixLevel;
@@ -299,7 +300,7 @@ public class RenderManager : MonoBehaviour
         persistedRoom.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
         persistedRoom.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
         
-        RoomManager.Instance.SaveRoomData(room: persistedRoom);
+        DataManager.Instance.SaveRoomData(room: persistedRoom);
     }
     
     public string[] GetSpeakerNames()
@@ -312,6 +313,15 @@ public class RenderManager : MonoBehaviour
         }
         
         return names;
+    }
+
+    public void SetSelectedSpeacker(int index)
+    {
+        selectedSpeaker = index;
+
+        speakers[selectedSpeaker].audioSource.volume = persistedRoom.sources[selectedSpeaker].volume;
+        speakers[selectedSpeaker].steamAudioSource.directMixLevel = persistedRoom.sources[selectedSpeaker].directMixLevel;
+        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = persistedRoom.sources[selectedSpeaker].reflectionMixLevel;
     }
 
     private void SetRecordingPath()
