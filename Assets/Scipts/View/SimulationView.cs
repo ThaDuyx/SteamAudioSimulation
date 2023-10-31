@@ -1,18 +1,18 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class SimulationView : MonoBehaviour
 {
-    [SerializeField] private TMP_Text timerText;
-    [SerializeField] private TMP_Text currentHRTFText;
-    [SerializeField] private TMP_Text sampleRateText;
-    [SerializeField] private TMP_Text distanceText;
-    [SerializeField] private TMP_Text wallDistanceText;
-    [SerializeField] private TMP_Text simulationDurationText;
-    [SerializeField] private TMP_Text reflectionDistanceText;
-    [SerializeField] private Slider bounceSlider;
+    [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
+    [SerializeField] private TMP_Dropdown speakerDropdown, renderMethodDropdown, roomDropdown;
+    [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle;
+    
+    private RenderMethod chosenMethod = RenderMethod.OneByOne;
+    private bool renderIsActivated = false; 
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     private void Start()
@@ -27,7 +27,10 @@ public class SimulationView : MonoBehaviour
     {
         HandleKeyStrokes();
 
-        HandleSimulation();
+        if (renderIsActivated)
+        {
+            HandleRender();
+        }
     }
 
     // Method for handling whenever specific keys are pressed on the keyboard.
@@ -35,65 +38,88 @@ public class SimulationView : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            ToggleSimulation();
+            ToggleRender();
 
             SetUI();
         }
 
+        if (Input.GetKeyDown(KeyCode.O))
+        {
+            RenderManager.Instance.ToggleAudio();
+        }
+
         if (Input.GetKeyDown(KeyCode.P))
         {
-            SimulationManager.Instance.ToggleAudio();
-        }
-
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            RoomManager.Instance.TestScene();
-        }
-    }
-
-    // Either starts or stops the simulation dependent on which state currently is active.
-    private void ToggleSimulation()
-    {
-        if (SimulationManager.Instance.IsRendering())
-        {
-            SimulationManager.Instance.StopRender();
-        }
-        else 
-        {
-            SimulationManager.Instance.StartRender();
+            RenderManager.Instance.ToggleAllAudio();
         }
     }
 
     // Called in the Update() MonoBehavior method
-    private void HandleSimulation()
+    private void HandleRender()
     {
-        if (SimulationManager.Instance.IsTiming() && SimulationManager.Instance.IsRendering())
+        if (RenderManager.Instance.IsTiming && RenderManager.Instance.IsRendering)
         {
             // Update time while rendering
-            timerText.text = "Time left: " + SimulationManager.Instance.TimeLeft() + "s";
-            simulationDurationText.text = "Time left: " + SimulationManager.Instance.TimeLeftOfSimulation() + "s";
+            timerText.text = "Time left: " + RenderManager.Instance.TimeLeft + "s";
+            simulationDurationText.text = "Time left: " + RenderManager.Instance.TimeLeftOfRender + "s";
         }
-        else 
+        else
         {
-            // Continue rendering until we reach the Last HRTF in our list where the rendering come to a halt
-            if (SimulationManager.Instance.IsRendering() && !SimulationManager.Instance.IsLastHRTF())
-            {
-                SimulationManager.Instance.ContinueRender();
-                
-                SetUI();
-            }
-            else if (SimulationManager.Instance.IsRendering() && SimulationManager.Instance.IsLastHRTF())
-            {
-                SimulationManager.Instance.StopRender();
+            if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA
+            || RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker)
+                {
+                    RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
+                    
+                    SetUI();
+                }
+                else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA
+                || RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
+                {
+                    RenderManager.Instance.StopRender();
 
-                SetUI();
-            }
+                    SetUI();
+                }
+        }
+    }
+
+    // Either starts or stops the simulation dependent on which state currently is active.
+    private void ToggleRender()
+    {
+        renderIsActivated = !renderIsActivated;
+         
+        if (RenderManager.Instance.IsRendering)
+        {
+            RenderManager.Instance.StopRender();
+        }
+        else
+        {
+            RenderManager.Instance.StartRender(renderMethod: chosenMethod);
         }
     }
 
     private void SetContent()
     {
-        GeometryManager.Instance.CalculateGeometry();
+        renderMethodDropdown.options.Clear();
+        foreach (string method in Enum.GetNames(typeof(RenderMethod)))
+        {
+            renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
+        }
+        renderMethodDropdown.RefreshShownValue();
+
+        speakerDropdown.options.Clear();
+        foreach (string speakerName in RenderManager.Instance.GetSpeakerNames())
+        {
+            speakerDropdown.options.Add(new TMP_Dropdown.OptionData() { text = speakerName });
+        }
+        speakerDropdown.RefreshShownValue();
+
+        roomDropdown.options.Clear();
+        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+        {
+            roomDropdown.options.Add(new TMP_Dropdown.OptionData() { text = "Room " + i });
+        }
+        roomDropdown.value = SceneManager.GetActiveScene().buildIndex;
+        roomDropdown.RefreshShownValue();
     }
 
     // Updates elements in the UI
@@ -103,31 +129,80 @@ public class SimulationView : MonoBehaviour
 
         simulationDurationText.text = "Idle state";
 
-        currentHRTFText.text = SimulationManager.Instance.CurrentHRTFName();
-
-        distanceText.text = "d(source): " + GeometryManager.Instance.DistanceToSource() + " units (m)";
-
-        wallDistanceText.text = "d(wall): " + GeometryManager.Instance.DistanceToWall() + " units (m)";
-
-        reflectionDistanceText.text = "d(refl): " + GeometryManager.Instance.DistanceOfReflection() + " units (m)";
+        currentSOFAText.text = RenderManager.Instance.ActiveSOFAName;
 
         sampleRateText.text = "fs: " + AudioSettings.outputSampleRate.ToString();
 
-        bounceSlider.value = SimulationManager.Instance.GetRealTimeBounces();
-
+        bounceSlider.value = RenderManager.Instance.RealTimeBounces;
         bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
 
-        applyReflToHRTFToggle.isOn = SimulationManager.Instance.GetHRTFReflectionStatus();
+        volumeSlider.value = RenderManager.Instance.Volume;
+        volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
+
+        directMixLevelSlider.value = RenderManager.Instance.DirectMixLevel;
+        directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
+
+        reflectionMixLevelSlider.value = RenderManager.Instance.ReflectionMixLevel;
+        reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
+
+        applyReflToHRTFToggle.isOn = RenderManager.Instance.ApplyHRTFToReflections;
+    }
+
+    public void SpeakerDropdownChanged(int index)
+    {
+        RenderManager.Instance.SetSelectedSpeacker(index);
+        SetUI();
+    }
+    
+    public void HRTFToggleChanged(bool isOn)
+    {
+        RenderManager.Instance.ApplyHRTFToReflections = isOn;
     }
 
     public void BounceSliderChanged(float value)
     {
-        SimulationManager.Instance.SetRealTimeBounces(value);
+        bounceSlider.value = value;
         bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
     }
-
-    public void HRTFToggleChanged(bool isOn)
+    public void BounceSliderEndDrag()
     {
-        SimulationManager.Instance.SetHRTFReflectionStatus(isOn);
+        RenderManager.Instance.RealTimeBounces = (int)bounceSlider.value;
+        RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: RoomManager.Instance.ActiveSceneIndex);
+    }
+
+    public void VolumeSliderChanged(float value)
+    {
+        RenderManager.Instance.Volume = value;
+        volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
+    }
+
+    public void DirectMixLevelSliderChanged(float value)
+    {
+        RenderManager.Instance.DirectMixLevel = value;
+        directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
+    }
+
+    public void ReflectionMixLevelSliderChanged(float value)
+    {
+        RenderManager.Instance.ReflectionMixLevel = value;
+        reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
+    }
+
+    public void RenderMethodDropDownChanged(int index)
+    {
+        chosenMethod = (RenderMethod)index;
+    }
+
+    public void RoomDropdownChanged(int index)
+    {
+        if (index != SceneManager.GetActiveScene().buildIndex)
+        {
+            RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: index);
+        }
+    }
+
+    public void SliderEndDrag()
+    {
+        RenderManager.Instance.PersistRoom();
     }
 }

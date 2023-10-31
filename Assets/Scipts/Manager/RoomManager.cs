@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -6,11 +8,9 @@ public class RoomManager : MonoBehaviour
     // Singleton object
     public static RoomManager Instance { get; private set; }
 
-    // [SerializeField] private GameObject[] rooms;
-    // private GameObject selectedRoom;
-    // private GameObject selectedSpeaker;
-    //private List<GameObject> speakerArray;
-    // private string speakerTag = "speaker";
+    public int SceneCounter { get { return SceneManager.sceneCountInBuildSettings; } }
+    public int ActiveSceneIndex { get { return SceneManager.GetActiveScene().buildIndex; } }
+    public int activeRoom = 2;
 
     private void Awake()
     {
@@ -24,8 +24,9 @@ public class RoomManager : MonoBehaviour
         }
     }
 
-    public void TestScene()
+    public void ChangeScene(int sceneIndexInBuildSettings)
     {
-        SceneManager.LoadScene(1);
+        activeRoom = sceneIndexInBuildSettings;
+        SceneManager.LoadScene(sceneIndexInBuildSettings);
     }
 }
