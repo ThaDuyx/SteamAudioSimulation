@@ -56,7 +56,6 @@ public class DataManager : MonoBehaviour
                 sources.Add(new Source(name: "speaker" + (i + 1).ToString(), volume: 0.091f, directMixLevel: 0.2f, reflectionMixLevel: 1.0f));
             }
             
-            
             Room defaultRoom = new("room" + activeRoomIndex.ToString(), activeRoomIndex, sources);    
             
             // Serialize & write the data
