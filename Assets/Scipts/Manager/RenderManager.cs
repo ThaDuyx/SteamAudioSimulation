@@ -97,7 +97,7 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
     }
-
+    
     // - Render Methods
     // Start rendering process
     public void StartRender(RenderMethod renderMethod)

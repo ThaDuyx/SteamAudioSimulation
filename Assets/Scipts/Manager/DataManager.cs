@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 public class DataManager : MonoBehaviour
 {
-     
+    // Singleton object
     public static DataManager Instance { get; private set; }
 
     void Awake()
@@ -20,7 +20,7 @@ public class DataManager : MonoBehaviour
         }
     }
 
-        // Write data from to a persisted room
+    // Write data from to a persisted room
     public void SaveRoomData(Room room)
     {
         string json = JsonUtility.ToJson(room, true);
@@ -47,13 +47,13 @@ public class DataManager : MonoBehaviour
             
             return loadedRoomData;
         }
-        else 
+        else
         {
             // Make default room data
             List<Source> sources = new();
             for (int i = 0; i < amountOfSpeakers; i++)
             {
-                sources.Add(new Source(name: "speaker" + (i + 1).ToString(), volume: 0.091f, directMixLevel: 0.2f, reflectionMixLevel: 1.0f));
+                sources.Add(new Source(name: "speaker" + (i + 1).ToString(), volume: 0.091f, directMixLevel: 0.2f, reflectionMixLevel: 1.0f, audioClip: "sweep_48kHz"));
             }
             
             Room defaultRoom = new("room" + activeRoomIndex.ToString(), activeRoomIndex, sources);    

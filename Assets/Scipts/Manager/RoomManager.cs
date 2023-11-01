@@ -11,6 +11,9 @@ public class RoomManager : MonoBehaviour
     public static event SceneUnloadedAction OnSceneUnloaded;
 
     public int SceneCounter { get { return SceneManager.sceneCountInBuildSettings; } }
+    
+    // The reason why a specific index is entered in .GetSceneAt(int index) is because we know there is only going to be our active canvas scene
+    // and the selected room scene which will be placed at the second index (namely 1).
     public int ActiveSceneIndex { get { return SceneManager.GetSceneAt(1).buildIndex; } }
     public string ActiveSceneName { get { return SceneManager.GetSceneAt(1).name; } }
 
@@ -25,6 +28,7 @@ public class RoomManager : MonoBehaviour
             Instance = this;
         }
 
+        // Add the first scene in the build index as a default scene.
         if (SceneManager.sceneCount == 1)
         {
             LoadDefaultScene();
