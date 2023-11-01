@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using SteamAudio;
 using UnityEngine;
 
@@ -13,26 +14,26 @@ public class RenderManager : MonoBehaviour
     // Singleton object
     public static RenderManager Instance { get; private set; }
 
-    [SerializeField] private AudioListener mainListener;
+    private AudioListener receiver;
     private List<Speaker> speakers;
     private Recorder recorder;
+    private Room room;
     private Timer timer;
     private Logger logger;
     private Calculator calculator;
     private int activeSpeaker = 0;
-    private Room persistedRoom;
-    
-    public int selectedSpeaker = 0;
+    private int selectedSpeaker = 0;
 
     public int SpeakerCount { get { return speakers.Count; } }
     public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
     public bool IsLastSpeaker { get { return activeSpeaker == speakers.Count - 1; } }
     public int SampleRate { get { return UnityEngine.AudioSettings.outputSampleRate; } }
-    public bool IsRendering { get; private set;}
-    public float SimulationLength { get { return 6.0f; } private set { value = SimulationLength; } }
+    public bool IsRendering { get; private set; }
+    public float SimulationLength { get { return 6.0f; } private set { SimulationLength = value; } }
     public bool IsTiming { get { return timer.IsActive(); } }
     public string TimeLeft { get { return timer.GetTimeLeft().ToString(); } }                                   
     public string TimeLeftOfRender { get { return timer.GetTimeLeftOfSimulation().ToString(); } }
+    public int SOFACount { get { return SteamAudioManager.Singleton.hrtfNames.Length; }}
     public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
     
@@ -65,8 +66,11 @@ public class RenderManager : MonoBehaviour
 
     private void SetContent()
     {
+        // Find Receiver in scene
+        receiver = FindObjectOfType<AudioListener>();
+
         // Fetching audio objects and pairing them in a speaker model
-        AudioSource[] audioSources = FindObjectsOfType<AudioSource>();   
+        AudioSource[] audioSources = FindObjectsOfType<AudioSource>();
         speakers = new List<Speaker>();
         
         calculator = new Calculator();
@@ -79,40 +83,43 @@ public class RenderManager : MonoBehaviour
             speakers.Add(speaker);
 
             // Calculating geometry
-            speaker.DistanceToReceiver = calculator.CalculateDistanceToReceiver(mainListener.transform, audioSource.transform);
-            speaker.Azimuth = calculator.CalculateAzimuth(mainListener.transform, audioSource.transform);
-            speaker.Elevation = calculator.CalculateElevation(mainListener.transform, audioSource.transform);
+            speaker.DistanceToReceiver = calculator.CalculateDistanceToReceiver(receiver.transform, audioSource.transform);
+            speaker.Azimuth = calculator.CalculateAzimuth(receiver.transform, audioSource.transform);
+            speaker.Elevation = calculator.CalculateElevation(receiver.transform, audioSource.transform);
         }
         
         // Sorting speakers after name
         speakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));
 
         // Try to load a persisted room or else fetch a default one.
-        persistedRoom = DataManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
+        room = DataManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
 
-        speakers[selectedSpeaker].audioSource.volume = persistedRoom.sources[selectedSpeaker].volume;
-        speakers[selectedSpeaker].steamAudioSource.directMixLevel = persistedRoom.sources[selectedSpeaker].directMixLevel;
-        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = persistedRoom.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
+        speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
+        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
     }
 
     // - Render Methods
     // Start rendering process
     public void StartRender(RenderMethod renderMethod)
     {
+        Debug.Log(renderMethod);
+
         IsRendering = true;
         
-        SetRecordingPath();
+        SetRecordingPath();                     // updates the output for recordings
         
-        UpdateSOFA();
+        UpdateSOFA();                           // increments array of SOFA files to our
         
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
-                RewindAndPlayAudioSources();
+                RewindAndPlayAudioSources();    // Resets and play every audio source in the current scene
                 break;
 
             case RenderMethod.OneByOne:
-                PlayAudio();
+                PlayAudio();                    // Plays the first speaker
                 break;
 
             default:
@@ -120,7 +127,7 @@ public class RenderManager : MonoBehaviour
         }
 
         recorder.ToggleRecording();
-        timer.Begin(SimulationLength);
+        timer.Begin(SimulationLength, renderMethod);
     }
 
     // Updates the state to continue rendering with the next HRTF in the list
@@ -146,7 +153,7 @@ public class RenderManager : MonoBehaviour
         }
 
         recorder.ToggleRecording();             // Start new recording
-        timer.Begin(SimulationLength);
+        timer.Begin(SimulationLength, renderMethod);          // Start new timer
     }
 
     // Stop rendering process
@@ -212,6 +219,7 @@ public class RenderManager : MonoBehaviour
         foreach (Speaker speaker in speakers)
         {
             speaker.audioSource.Play();
+            Debug.Log(speaker.Name + " playing");
         }
     }
 
@@ -294,13 +302,29 @@ public class RenderManager : MonoBehaviour
         set { speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; }
     }
 
+    public string AudioClip { 
+        get 
+        { 
+            return speakers[selectedSpeaker].audioSource.clip.name; 
+        } 
+        set 
+        { 
+            // Deletes the 4 last characters of the string meaning either '.wav' or '.mp3'. Unity does not use the file type when searching in the library.
+            string audioClipWithoutFileType = value[..^4];
+            
+            // Replace the audio clip with the new one
+            speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(audioClipWithoutFileType); 
+        }
+    }
+
     public void PersistRoom()
     {
-        persistedRoom.sources[selectedSpeaker].volume = Volume;
-        persistedRoom.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
-        persistedRoom.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
+        room.sources[selectedSpeaker].volume = Volume;
+        room.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
+        room.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
+        room.sources[selectedSpeaker].audioClip = AudioClip;
         
-        DataManager.Instance.SaveRoomData(room: persistedRoom);
+        DataManager.Instance.SaveRoomData(room: room);
     }
     
     public string[] GetSpeakerNames()
@@ -315,13 +339,14 @@ public class RenderManager : MonoBehaviour
         return names;
     }
 
-    public void SetSelectedSpeacker(int index)
+    public void SetSelectedSpeaker(int index)
     {
         selectedSpeaker = index;
 
-        speakers[selectedSpeaker].audioSource.volume = persistedRoom.sources[selectedSpeaker].volume;
-        speakers[selectedSpeaker].steamAudioSource.directMixLevel = persistedRoom.sources[selectedSpeaker].directMixLevel;
-        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = persistedRoom.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
+        speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
+        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
     }
 
     private void SetRecordingPath()

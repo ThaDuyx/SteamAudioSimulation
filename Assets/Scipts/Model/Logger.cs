@@ -29,8 +29,12 @@ public class Logger
     {
         writer.WriteLine($"Simulation Log : { TimeStamp }");
         writer.WriteLine("// --------------------");
+        writer.Write($"Room name : room{ RoomManager.Instance.ActiveSceneIndex }");
+        
         // TODO - Make enum from room manager to get the room sizes
         writer.WriteLine("Room size : 20x16 units");
+        // ------
+        
         writer.WriteLine($"Sample rate : { RenderManager.Instance.SampleRate } Hz" );
     }
 

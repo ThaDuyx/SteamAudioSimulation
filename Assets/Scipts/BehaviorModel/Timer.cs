@@ -8,14 +8,14 @@ public class Timer : MonoBehaviour
     private float duration;
     private float simulationDuration;
 
-    public void Begin(float duration)
+    public void Begin(float duration, RenderMethod method)
     {
         this.duration = duration;
         _isActive = true;
         
         if (!_didStart)
         {
-            simulationDuration = SetSimulationDuration();
+            simulationDuration = SetSimulationDuration(method);
             _didStart = true;
         } 
 
@@ -54,9 +54,13 @@ public class Timer : MonoBehaviour
         return simulationDuration;
     }
 
-    private float SetSimulationDuration()
+    private float SetSimulationDuration(RenderMethod method)
     {
-        // return (float)SimulationManager.Instance.AmountOfHRTFs() * duration;
-        return RenderManager.Instance.SpeakerCount * RenderManager.Instance.SimulationLength;
+        return method switch
+        {
+            RenderMethod.AllAtOnce => RenderManager.Instance.SOFACount * duration,
+            RenderMethod.OneByOne => RenderManager.Instance.SpeakerCount * RenderManager.Instance.SimulationLength,
+            _ => 0.0f,
+        };
     }
 }
