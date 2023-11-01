@@ -4545,7 +4545,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 6949777ce295b4aa4837cbf83fdd7180, type: 3}
+  m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
   m_Volume: 0.091
   m_Pitch: 1
@@ -7450,6 +7450,7 @@ MonoBehaviour:
   currentSOFAText: {fileID: 964012324}
   sampleRateText: {fileID: 992929876}
   simulationDurationText: {fileID: 788953774}
+  audioClipDropdown: {fileID: 0}
   speakerDropdown: {fileID: 592154589}
   renderMethodDropdown: {fileID: 1926548789}
   roomDropdown: {fileID: 848044689}
@@ -8319,7 +8320,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 6949777ce295b4aa4837cbf83fdd7180, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 7e2e8c5089d8d4d638edcf7dd19fbdaa, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 0.091
   m_Pitch: 1
@@ -8740,7 +8741,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 6949777ce295b4aa4837cbf83fdd7180, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 7e2e8c5089d8d4d638edcf7dd19fbdaa, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 0.091
   m_Pitch: 1

@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.SceneManagement;
+using Unity.VisualScripting;
 
 public class DataManager : MonoBehaviour
 {
@@ -62,7 +63,40 @@ public class DataManager : MonoBehaviour
             string defaultRoomJson = JsonUtility.ToJson(defaultRoom, true);
             File.WriteAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json", defaultRoomJson);
 
-            return defaultRoom;            
+            return defaultRoom;
         }
+    }
+
+    public List<string> GetAudioClips()
+    {
+        string audioClipsPath = Path.Combine(Application.dataPath, "Plugins/SteamAudio/Resources");
+
+        if (Directory.Exists(audioClipsPath))
+        {
+            string[] audioClipFilePaths = Directory.GetFiles(audioClipsPath);
+
+            List<string> audioClips = new();
+
+            foreach (string audioClipFilePath in audioClipFilePaths)
+            {
+                string audioClip = Path.GetFileName(audioClipFilePath);
+                if (FileIsWAVorMP3(audioClip))
+                {
+                    audioClips.Add(audioClip);
+                }
+            }
+
+            return audioClips;
+        }
+        else 
+        {
+            return new List<string>();
+        }
+    }
+
+    // Ensures that our file is WAV or MP3 since Unity creates .meta files when importing audio files from the Assets folder
+    private bool FileIsWAVorMP3(string fileName) 
+    {
+        return fileName.EndsWith(".wav", System.StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".mp3", System.StringComparison.OrdinalIgnoreCase);
     }
 }

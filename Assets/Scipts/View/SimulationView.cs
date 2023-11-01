@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class SimulationView : MonoBehaviour
 {
     [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
-    [SerializeField] private TMP_Dropdown speakerDropdown, renderMethodDropdown, roomDropdown;
+    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown;
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle;
     
@@ -99,7 +99,7 @@ public class SimulationView : MonoBehaviour
 
     // Either starts or stops the simulation dependent on which state currently is active.
     private void ToggleRender()
-    {     
+    {
         if (RenderManager.Instance.IsRendering)
         {
             RenderManager.Instance.StopRender();
@@ -113,19 +113,18 @@ public class SimulationView : MonoBehaviour
     private void SetContent()
     {
         // feed dropdowns with data
-        renderMethodDropdown.options.Clear();
-        foreach (string method in Enum.GetNames(typeof(RenderMethod)))
-        {
-            renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
-        }
-        renderMethodDropdown.RefreshShownValue();
-
         speakerDropdown.options.Clear();
         foreach (string speakerName in RenderManager.Instance.GetSpeakerNames())
         {
             speakerDropdown.options.Add(new TMP_Dropdown.OptionData() { text = speakerName });
         }
         speakerDropdown.RefreshShownValue();
+
+        audioClipDropdown.options.Clear();
+        foreach (string audioClip in DataManager.Instance.GetAudioClips())
+        {
+            audioClipDropdown.options.Add(new TMP_Dropdown.OptionData() { text = audioClip });
+        }
 
         roomDropdown.options.Clear();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
@@ -137,6 +136,13 @@ public class SimulationView : MonoBehaviour
             }
         }
         roomDropdown.RefreshShownValue();
+
+        renderMethodDropdown.options.Clear();
+        foreach (string method in Enum.GetNames(typeof(RenderMethod)))
+        {
+            renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
+        }
+        renderMethodDropdown.RefreshShownValue();
     }
 
     // Updates elements in the UI
@@ -163,12 +169,21 @@ public class SimulationView : MonoBehaviour
         reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
 
         applyReflToHRTFToggle.isOn = RenderManager.Instance.ApplyHRTFToReflections;
+
+        audioClipDropdown.value = GetAudioClipIndex();
+        audioClipDropdown.RefreshShownValue();
     }
 
     public void SpeakerDropdownChanged(int index)
     {
-        RenderManager.Instance.SetSelectedSpeacker(index);
+        RenderManager.Instance.SetSelectedSpeaker(index);
         SetUI();
+    }
+
+    public void AudioClipDropdownChanged(int index)
+    {
+        RenderManager.Instance.AudioClip = audioClipDropdown.options[index].text;
+        RenderManager.Instance.PersistRoom();
     }
     
     public void HRTFToggleChanged(bool isOn)
@@ -230,5 +245,19 @@ public class SimulationView : MonoBehaviour
     public void SliderEndDrag()
     {
         RenderManager.Instance.PersistRoom();
+    }
+
+    private int GetAudioClipIndex()
+    {
+        for (int i = 0; i < audioClipDropdown.options.Count; i++)
+        {
+            if (audioClipDropdown.options[i].text == RenderManager.Instance.AudioClip + ".wav"
+            || audioClipDropdown.options[i].text == RenderManager.Instance.AudioClip + ".mp3")
+            {
+                return i;
+            }
+        }
+
+        return 0;
     }
 }

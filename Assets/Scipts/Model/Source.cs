@@ -1,5 +1,4 @@
 using System;
-using Unity.VisualScripting.Dependencies.Sqlite;
 
 [Serializable]
 public class Source
@@ -17,5 +16,6 @@ public class Source
         this.directMixLevel = directMixLevel;
         this.reflectionMixLevel = reflectionMixLevel;
         this.audioClip = audioClip;
+        
     }
 }

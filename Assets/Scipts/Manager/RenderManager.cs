@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using SteamAudio;
 using UnityEngine;
 
@@ -28,7 +29,7 @@ public class RenderManager : MonoBehaviour
     public bool IsLastSpeaker { get { return activeSpeaker == speakers.Count - 1; } }
     public int SampleRate { get { return UnityEngine.AudioSettings.outputSampleRate; } }
     public bool IsRendering { get; private set; }
-    public float SimulationLength { get { return 6.0f; } private set { value = SimulationLength; } }
+    public float SimulationLength { get { return 6.0f; } private set { SimulationLength = value; } }
     public bool IsTiming { get { return timer.IsActive(); } }
     public string TimeLeft { get { return timer.GetTimeLeft().ToString(); } }                                   
     public string TimeLeftOfRender { get { return timer.GetTimeLeftOfSimulation().ToString(); } }
@@ -96,8 +97,9 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
     }
-    
+
     // - Render Methods
     // Start rendering process
     public void StartRender(RenderMethod renderMethod)
@@ -300,11 +302,27 @@ public class RenderManager : MonoBehaviour
         set { speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; }
     }
 
+    public string AudioClip { 
+        get 
+        { 
+            return speakers[selectedSpeaker].audioSource.clip.name; 
+        } 
+        set 
+        { 
+            // Deletes the 4 last characters of the string meaning either '.wav' or '.mp3'. Unity does not use the file type when searching in the library.
+            string audioClipWithoutFileType = value[..^4];
+            
+            // Replace the audio clip with the new one
+            speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(audioClipWithoutFileType); 
+        }
+    }
+
     public void PersistRoom()
     {
         room.sources[selectedSpeaker].volume = Volume;
         room.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
         room.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
+        room.sources[selectedSpeaker].audioClip = AudioClip;
         
         DataManager.Instance.SaveRoomData(room: room);
     }
@@ -321,13 +339,14 @@ public class RenderManager : MonoBehaviour
         return names;
     }
 
-    public void SetSelectedSpeacker(int index)
+    public void SetSelectedSpeaker(int index)
     {
         selectedSpeaker = index;
 
         speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
     }
 
     private void SetRecordingPath()
