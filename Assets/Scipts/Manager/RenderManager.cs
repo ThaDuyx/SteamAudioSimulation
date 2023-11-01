@@ -97,6 +97,7 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
     }
 
     // - Render Methods
@@ -300,9 +301,20 @@ public class RenderManager : MonoBehaviour
         get { return speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel; }
         set { speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; }
     }
-    public string CurrentAudioClipName { 
-        get { return speakers[selectedSpeaker].audioSource.clip.name; } 
-        private set { CurrentAudioClipName = value; }
+
+    public string AudioClip { 
+        get 
+        { 
+            return speakers[selectedSpeaker].audioSource.clip.name; 
+        } 
+        set 
+        { 
+            // Deletes the 4 last characters of the string meaning either '.wav' or '.mp3'. Unity does not use the file type when searching in the library.
+            string audioClipWithoutFileType = value[..^4];
+            
+            // Replace the audio clip with the new one
+            speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(audioClipWithoutFileType); 
+        }
     }
 
     public void PersistRoom()
@@ -310,7 +322,7 @@ public class RenderManager : MonoBehaviour
         room.sources[selectedSpeaker].volume = Volume;
         room.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
         room.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
-        room.sources[selectedSpeaker].audioClip = CurrentAudioClipName;
+        room.sources[selectedSpeaker].audioClip = AudioClip;
         
         DataManager.Instance.SaveRoomData(room: room);
     }
@@ -327,7 +339,7 @@ public class RenderManager : MonoBehaviour
         return names;
     }
 
-    public void SetSelectedSpeacker(int index)
+    public void SetSelectedSpeaker(int index)
     {
         selectedSpeaker = index;
 
@@ -335,22 +347,6 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
         speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
-    }
-
-    public void SetAudioClip(string audioClip)
-    {
-        // Deletes the 4 last characters of the string meaning either '.wav' or '.mp3'. Unity does not use the file type when searching in the library.
-        string audioClipWithoutFileType = audioClip[..^4];
-        
-        // Looks for audio files in the resources folder with the string name
-        AudioClip newAudioClip = Resources.Load<AudioClip>(audioClipWithoutFileType);
-        
-        // Stop audio playback
-        StopAudio();
-        
-        // Replace the audio clip with the new one
-        speakers[selectedSpeaker].audioSource.clip = newAudioClip;
-        CurrentAudioClipName = audioClipWithoutFileType;
     }
 
     private void SetRecordingPath()

@@ -63,7 +63,7 @@ public class DataManager : MonoBehaviour
             string defaultRoomJson = JsonUtility.ToJson(defaultRoom, true);
             File.WriteAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json", defaultRoomJson);
 
-            return defaultRoom;            
+            return defaultRoom;
         }
     }
 

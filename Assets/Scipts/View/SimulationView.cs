@@ -125,8 +125,6 @@ public class SimulationView : MonoBehaviour
         {
             audioClipDropdown.options.Add(new TMP_Dropdown.OptionData() { text = audioClip });
         }
-        audioClipDropdown.value = GetAudioClipIndex();
-        audioClipDropdown.RefreshShownValue();
 
         roomDropdown.options.Clear();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
@@ -171,18 +169,20 @@ public class SimulationView : MonoBehaviour
         reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
 
         applyReflToHRTFToggle.isOn = RenderManager.Instance.ApplyHRTFToReflections;
+
+        audioClipDropdown.value = GetAudioClipIndex();
+        audioClipDropdown.RefreshShownValue();
     }
 
     public void SpeakerDropdownChanged(int index)
     {
-        RenderManager.Instance.SetSelectedSpeacker(index);
+        RenderManager.Instance.SetSelectedSpeaker(index);
         SetUI();
     }
 
     public void AudioClipDropdownChanged(int index)
     {
-        RenderManager.Instance.SetAudioClip(audioClip: audioClipDropdown.options[index].text);
-
+        RenderManager.Instance.AudioClip = audioClipDropdown.options[index].text;
         RenderManager.Instance.PersistRoom();
     }
     
@@ -251,8 +251,8 @@ public class SimulationView : MonoBehaviour
     {
         for (int i = 0; i < audioClipDropdown.options.Count; i++)
         {
-            if (audioClipDropdown.options[i].text == RenderManager.Instance.CurrentAudioClipName + ".wav"
-            || audioClipDropdown.options[i].text == RenderManager.Instance.CurrentAudioClipName + ".mp3")
+            if (audioClipDropdown.options[i].text == RenderManager.Instance.AudioClip + ".wav"
+            || audioClipDropdown.options[i].text == RenderManager.Instance.AudioClip + ".mp3")
             {
                 return i;
             }
