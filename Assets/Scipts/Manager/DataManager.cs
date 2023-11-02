@@ -69,11 +69,11 @@ public class DataManager : MonoBehaviour
 
     public List<string> GetAudioClips()
     {
-        string audioClipsPath = Path.Combine(Application.dataPath, "Plugins/SteamAudio/Resources");
+        string audioClipsDirectory = Path.Combine(Application.dataPath, "Plugins/SteamAudio/Resources/Audio");
 
-        if (Directory.Exists(audioClipsPath))
+        if (Directory.Exists(audioClipsDirectory))
         {
-            string[] audioClipFilePaths = Directory.GetFiles(audioClipsPath);
+            string[] audioClipFilePaths = Directory.GetFiles(audioClipsDirectory);
 
             List<string> audioClips = new();
 

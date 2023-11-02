@@ -9,6 +9,7 @@ public class SimulationView : MonoBehaviour
     [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
     [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown;
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
+    [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle;
     
     private RenderMethod chosenMethod = RenderMethod.OneByOne;
@@ -47,7 +48,8 @@ public class SimulationView : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.P))
         {
             // RenderManager.Instance.ToggleAllAudio();
-            SetUI();
+            // SetUI();
+            Debug.Log(RoomManager.Instance.Material.name);
         }
     }
 
@@ -172,6 +174,15 @@ public class SimulationView : MonoBehaviour
 
         audioClipDropdown.value = GetAudioClipIndex();
         audioClipDropdown.RefreshShownValue();
+
+        lowFreqAbsorpSlider.value = RoomManager.Instance.Material.lowFreqAbsorption;
+        lowFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = lowFreqAbsorpSlider.value.ToString("F2");
+        midFreqAbsorpSlider.value = RoomManager.Instance.Material.midFreqAbsorption;
+        midFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = midFreqAbsorpSlider.value.ToString("F2");
+        highFreqAbsorpSlider.value = RoomManager.Instance.Material.highFreqAbsorption;
+        highFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = highFreqAbsorpSlider.value.ToString("F2");
+        scatteringSlider.value = RoomManager.Instance.Material.scattering;
+        scatteringSlider.GetComponentInChildren<TMP_Text>().text = scatteringSlider.value.ToString("F2");
     }
 
     public void SpeakerDropdownChanged(int index)
@@ -199,7 +210,11 @@ public class SimulationView : MonoBehaviour
     public void BounceSliderEndDrag()
     {
         RenderManager.Instance.RealTimeBounces = (int)bounceSlider.value;
-
+        RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: RoomManager.Instance.ActiveSceneIndex);
+    }
+    
+    public void WallSliderEndDrag()
+    {
         RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: RoomManager.Instance.ActiveSceneIndex);
     }
 
@@ -219,6 +234,29 @@ public class SimulationView : MonoBehaviour
     {
         RenderManager.Instance.ReflectionMixLevel = value;
         reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
+    }
+    
+    // TODO - Remember that I've changed the Audio Path as well just like I did with the RoomManager.Instance.Material ...
+    // This has to be changed in order to actually compile the code once again.
+    public void LowFreqAbsorpSliderChanged(float value) 
+    { 
+        RoomManager.Instance.Material.lowFreqAbsorption = value; 
+        lowFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = lowFreqAbsorpSlider.value.ToString("F2");
+    }
+    public void MidFreqAbsorpSliderChanged(float value) 
+    { 
+        RoomManager.Instance.Material.midFreqAbsorption = value; 
+        midFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = midFreqAbsorpSlider.value.ToString("F2");
+    }
+    public void HighFreqAbsorpSliderChanged(float value) 
+    { 
+        RoomManager.Instance.Material.highFreqAbsorption = value; 
+        highFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = highFreqAbsorpSlider.value.ToString("F2");
+    }
+    public void ScatteringSliderChanged(float value) 
+    {
+        RoomManager.Instance.Material.scattering = value; 
+        scatteringSlider.GetComponentInChildren<TMP_Text>().text = scatteringSlider.value.ToString("F2");
     }
 
     public void RenderMethodDropDownChanged(int index)

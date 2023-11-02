@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lowFreqAbsorption: 0
   midFreqAbsorption: 0
-  highFreqAbsorption: 0
-  scattering: 0.5
-  lowFreqTransmission: 0.015
+  highFreqAbsorption: 0.19285715
+  scattering: 0.5928571
+  lowFreqTransmission: 0
   midFreqTransmission: 0.002
   highFreqTransmission: 0.001

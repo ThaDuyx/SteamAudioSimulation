@@ -97,7 +97,7 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
-        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);
     }
 
     // - Render Methods
@@ -304,7 +304,7 @@ public class RenderManager : MonoBehaviour
 
     public string AudioClip { 
         get 
-        { 
+        {
             return speakers[selectedSpeaker].audioSource.clip.name; 
         } 
         set 
@@ -313,7 +313,8 @@ public class RenderManager : MonoBehaviour
             string audioClipWithoutFileType = value[..^4];
             
             // Replace the audio clip with the new one
-            speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(audioClipWithoutFileType); 
+            speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + audioClipWithoutFileType);
+
         }
     }
 
