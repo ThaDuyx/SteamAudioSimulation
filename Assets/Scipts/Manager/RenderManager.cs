@@ -36,11 +36,13 @@ public class RenderManager : MonoBehaviour
     public string TimeLeft { get { return timer.GetTimeLeft().ToString(); } }                                   
     public string TimeLeftOfRender { get { return timer.GetTimeLeftOfSimulation().ToString(); } }
     public int SOFACount { get { return SteamAudioManager.Singleton.hrtfNames.Length; }}
+    public string[] SOFANames { get { return SteamAudioManager.Singleton.hrtfNames; } }
     public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
     
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
     public static string folderPath = "/Users/duyx/Code/Jabra/python/renders";
+    public string recordingPath;
     
     public static string defaultClipName = "sweep_48kHz";
 
@@ -103,28 +105,29 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
         speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);
+        speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections = room.sources[selectedSpeaker].applyHRTFToReflections == 1;
     }
 
     // - Render Methods
     // Start rendering process
-    public void StartRender(RenderMethod renderMethod)
+    public void StartRender(RenderMethod renderMethod, int sofaIndex)
     {
         Debug.Log(renderMethod);
 
         IsRendering = true;
         
-        SetRecordingPath();                     // updates the output for recordings
-        
-        UpdateSOFA();                           // increments array of SOFA files to our
+        SetRecordingPath();                                             // updates the output for recordings
         
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
-                RewindAndPlayAudioSources();    // Resets and play every audio source in the current scene
+                UpdateSOFA();                                           // increments array of SOFA files to our
+                RewindAndPlayAudioSources();                            // Resets and play every audio source in the current scene
                 break;
 
             case RenderMethod.OneByOne:
-                PlayAudio();                    // Plays the first speaker
+                SteamAudioManager.Singleton.currentHRTF = sofaIndex;    // Selects which SOFA file should be used in the render
+                PlayAudio();                                            // Plays the first speaker
                 break;
 
             default:
@@ -328,6 +331,7 @@ public class RenderManager : MonoBehaviour
         room.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
         room.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
         room.sources[selectedSpeaker].audioClip = AudioClip;
+        room.sources[selectedSpeaker].applyHRTFToReflections = ApplyHRTFToReflections ? 1 : 0;
         
         DataManager.Instance.SaveRoomData(room: room);
     }
@@ -351,13 +355,14 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
-        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);        
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);
+        speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections = room.sources[selectedSpeaker].applyHRTFToReflections == 1;
     }
 
     private void SetRecordingPath()
     {
         string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
-        folderPath += timeStamp + "/";
-        System.IO.Directory.CreateDirectory(folderPath);
+        recordingPath = folderPath + timeStamp + "/";
+        System.IO.Directory.CreateDirectory(recordingPath);
     }
 }

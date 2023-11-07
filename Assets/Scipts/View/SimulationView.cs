@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class SimulationView : MonoBehaviour
 {
     [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
-    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown;
+    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown;
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle;
@@ -111,7 +111,7 @@ public class SimulationView : MonoBehaviour
         }
         else
         {
-            RenderManager.Instance.StartRender(renderMethod: chosenMethod);
+            RenderManager.Instance.StartRender(renderMethod: chosenMethod, sofaIndex: sofaFileDropdown.value);
         }
     }
 
@@ -148,6 +148,13 @@ public class SimulationView : MonoBehaviour
             renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
         }
         renderMethodDropdown.RefreshShownValue();
+
+        sofaFileDropdown.options.Clear();
+        foreach (string sofaFile in RenderManager.Instance.SOFANames)
+        {
+            sofaFileDropdown.options.Add(new TMP_Dropdown.OptionData() { text = sofaFile});
+        }
+        sofaFileDropdown.RefreshShownValue();
     }
 
     // Updates elements in the UI
@@ -199,10 +206,16 @@ public class SimulationView : MonoBehaviour
         RenderManager.Instance.AudioClip = audioClipDropdown.options[index].text;
         RenderManager.Instance.PersistRoom();
     }
+
+    public void SOFAFileDropdownChanged(int index)
+    {
+        currentSOFAText.text = sofaFileDropdown.options[index].text;
+    }
     
     public void HRTFToggleChanged(bool isOn)
     {
         RenderManager.Instance.ApplyHRTFToReflections = isOn;
+        RenderManager.Instance.PersistRoom();
     }
 
     public void BounceSliderChanged(float value)
@@ -239,8 +252,6 @@ public class SimulationView : MonoBehaviour
         reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
     }
     
-    // TODO - Remember that I've changed the Audio Path as well just like I did with the RoomManager.Instance.Material ...
-    // This has to be changed in order to actually compile the code once again.
     public void LowFreqAbsorpSliderChanged(float value) 
     { 
         RoomManager.Instance.Material.lowFreqAbsorption = value; 

@@ -45,8 +45,6 @@ public class DataManager : MonoBehaviour
             string jsonData = File.ReadAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json");
             Room loadedRoomData = JsonUtility.FromJson<Room>(jsonData);
             
-            Debug.Log(loadedRoomData.sources[0].audioClip);
-            
             return loadedRoomData;
         }
         else
@@ -55,7 +53,13 @@ public class DataManager : MonoBehaviour
             List<Source> sources = new();
             for (int i = 0; i < amountOfSpeakers; i++)
             {
-                sources.Add(new Source(name: "speaker" + (i + 1).ToString(), volume: 0.091f, directMixLevel: 0.2f, reflectionMixLevel: 1.0f, audioClip: "sweep_48kHz"));
+                sources.Add(new Source(
+                    name: "speaker" + (i + 1).ToString(), 
+                    volume: 0.091f, 
+                    directMixLevel: 0.2f, 
+                    reflectionMixLevel: 1.0f, 
+                    audioClip: "sweep_48kHz", 
+                    applyHRTFToReflections: 1));
             }
             
             Room defaultRoom = new("room" + activeRoomIndex.ToString(), activeRoomIndex, sources);    
