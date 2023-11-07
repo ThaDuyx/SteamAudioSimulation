@@ -4,7 +4,7 @@ using SteamAudio;
 
 public class Logger
 {
-    private string LogPath { get { return RenderManager.Instance.folderPath + "log.txt"; } }
+    private string LogPath { get { return RenderManager.folderPath + "log.txt"; } }
     private string TimeStamp { get { return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); } }
 
     public void Log(Speaker speaker)

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using SteamAudio;
 using UnityEngine;
 
@@ -21,7 +20,10 @@ public class RenderManager : MonoBehaviour
     private Timer timer;
     private Logger logger;
     private Calculator calculator;
+    
+    // Integer used for tracking which speaker should play during the OneByOne render method
     private int activeSpeaker = 0;
+    // Integer used for selecting speakers and configuring their parameters
     private int selectedSpeaker = 0;
 
     public int SpeakerCount { get { return speakers.Count; } }
@@ -38,7 +40,9 @@ public class RenderManager : MonoBehaviour
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
     
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
-    public string folderPath = "/Users/duyx/Code/Jabra/python/renders";
+    public static string folderPath = "/Users/duyx/Code/Jabra/python/renders";
+    
+    public static string defaultClipName = "sweep_48kHz";
 
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
@@ -80,6 +84,7 @@ public class RenderManager : MonoBehaviour
             // Initialising speaker list
             SteamAudioSource steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
             Speaker speaker = new(audioSource, steamSource);
+            speaker.audioSource.clip = Resources.Load<AudioClip>("Audio/" + defaultClipName);
             speakers.Add(speaker);
 
             // Calculating geometry
@@ -311,10 +316,9 @@ public class RenderManager : MonoBehaviour
         { 
             // Deletes the 4 last characters of the string meaning either '.wav' or '.mp3'. Unity does not use the file type when searching in the library.
             string audioClipWithoutFileType = value[..^4];
-            
+
             // Replace the audio clip with the new one
             speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + audioClipWithoutFileType);
-
         }
     }
 
@@ -347,7 +351,7 @@ public class RenderManager : MonoBehaviour
         speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
         speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
         speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
-        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>(room.sources[selectedSpeaker].audioClip);
+        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);        
     }
 
     private void SetRecordingPath()

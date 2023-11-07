@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.SceneManagement;
-using Unity.VisualScripting;
 
 public class DataManager : MonoBehaviour
 {
@@ -45,6 +44,8 @@ public class DataManager : MonoBehaviour
         {
             string jsonData = File.ReadAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json");
             Room loadedRoomData = JsonUtility.FromJson<Room>(jsonData);
+            
+            Debug.Log(loadedRoomData.sources[0].audioClip);
             
             return loadedRoomData;
         }

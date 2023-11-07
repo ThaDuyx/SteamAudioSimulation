@@ -47,9 +47,7 @@ public class SimulationView : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.P))
         {
-            // RenderManager.Instance.ToggleAllAudio();
-            // SetUI();
-            Debug.Log(RoomManager.Instance.Material.name);
+            RenderManager.Instance.ToggleAllAudio();
         }
     }
 
@@ -64,7 +62,13 @@ public class SimulationView : MonoBehaviour
         }
         else
         {
-            switch (chosenMethod)
+            HandleRenderMethod();
+        }
+    }
+
+    private void HandleRenderMethod()
+    {
+        switch (chosenMethod)
             {
                 case RenderMethod.AllAtOnce:
                     if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
@@ -96,7 +100,6 @@ public class SimulationView : MonoBehaviour
                     }
                     break;
             }
-        }
     }
 
     // Either starts or stops the simulation dependent on which state currently is active.
@@ -285,6 +288,7 @@ public class SimulationView : MonoBehaviour
         RenderManager.Instance.PersistRoom();
     }
 
+    // Used for retrieving the index from the selected audio clip
     private int GetAudioClipIndex()
     {
         for (int i = 0; i < audioClipDropdown.options.Count; i++)
