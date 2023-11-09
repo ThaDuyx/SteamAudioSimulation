@@ -79,7 +79,7 @@ public class SimulationView : MonoBehaviour
                     }
                     else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA)
                     {
-                        RenderManager.Instance.StopRender();
+                        RenderManager.Instance.StopRender(renderMethod: chosenMethod);
 
                         SetUI();
                     }
@@ -94,7 +94,7 @@ public class SimulationView : MonoBehaviour
                     }
                     else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
                     {
-                        RenderManager.Instance.StopRender();
+                        RenderManager.Instance.StopRender(renderMethod: chosenMethod);
 
                         SetUI();
                     }
@@ -107,7 +107,7 @@ public class SimulationView : MonoBehaviour
     {
         if (RenderManager.Instance.IsRendering)
         {
-            RenderManager.Instance.StopRender();
+            RenderManager.Instance.StopRender(renderMethod: chosenMethod);
         }
         else
         {

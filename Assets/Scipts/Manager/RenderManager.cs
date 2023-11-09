@@ -112,8 +112,6 @@ public class RenderManager : MonoBehaviour
     // Start rendering process
     public void StartRender(RenderMethod renderMethod, int sofaIndex)
     {
-        Debug.Log(renderMethod);
-
         IsRendering = true;
         
         SetRecordingPath();                                             // updates the output for recordings
@@ -165,10 +163,9 @@ public class RenderManager : MonoBehaviour
     }
 
     // Stop rendering process
-    public void StopRender()
+    public void StopRender(RenderMethod renderMethod)
     {
         IsRendering = false;
-        SteamAudioManager.Singleton.currentHRTF = 0;
         timer.Stop();
         recorder.StopRecording();
         
@@ -176,6 +173,17 @@ public class RenderManager : MonoBehaviour
         foreach (var speaker in speakers)
         {
             logger.Log(speaker: speaker);
+        }
+
+        switch (renderMethod)
+        {
+            case RenderMethod.AllAtOnce:
+                SteamAudioManager.Singleton.currentHRTF = 0;       
+                break;
+
+            case RenderMethod.OneByOne:
+                activeSpeaker = 0;
+                break;
         }
     }
 
