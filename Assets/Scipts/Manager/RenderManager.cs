@@ -227,7 +227,7 @@ public class RenderManager : MonoBehaviour
 
     public void PlayAudio()
     {
-        speakers[activeSpeaker].audioSource.Play();
+        speakers[selectedSpeaker].audioSource.Play();
     }
 
     public void PlayAllAudio()
@@ -331,6 +331,18 @@ public class RenderManager : MonoBehaviour
             // Replace the audio clip with the new one
             speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + audioClipWithoutFileType);
         }
+    }
+
+    public bool AirAbsorption
+    {
+        get { return speakers[selectedSpeaker].steamAudioSource.airAbsorption; }
+        set { speakers[selectedSpeaker].steamAudioSource.airAbsorption = value; }
+    }
+
+    public bool DistanceAttenuation
+    {
+        get { return speakers[selectedSpeaker].steamAudioSource.distanceAttenuation; }
+        set { speakers[selectedSpeaker].steamAudioSource.distanceAttenuation = value; }
     }
 
     public void PersistRoom()

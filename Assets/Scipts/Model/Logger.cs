@@ -32,10 +32,14 @@ public class Logger
         writer.Write($"Room name : room{ RoomManager.Instance.ActiveSceneIndex }");
         
         // TODO - Make enum from room manager to get the room sizes
-        writer.WriteLine("Room size : 20x16 units");
+
+        writer.WriteLine($"\nLow Freq. Absorption : { RoomManager.Instance.Material.lowFreqAbsorption }");
+        writer.WriteLine($"Mid Freq. Absorption : { RoomManager.Instance.Material.midFreqAbsorption }");
+        writer.WriteLine($"High Freq. Absorption : { RoomManager.Instance.Material.highFreqAbsorption }");
+        writer.WriteLine($"Scattering : { RoomManager.Instance.Material.scattering }");
         // ------
         
-        writer.WriteLine($"Sample rate : { RenderManager.Instance.SampleRate } Hz" );
+        writer.WriteLine($"\nSample rate : { RenderManager.Instance.SampleRate } Hz" );
     }
 
     private void WriteSpeakerInfo(StreamWriter writer, Speaker speakerInfo)

@@ -10,7 +10,7 @@ public class SimulationView : MonoBehaviour
     [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown;
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
-    [SerializeField] private Toggle applyReflToHRTFToggle;
+    [SerializeField] private Toggle applyReflToHRTFToggle, distAttenuationToggle, airAbsorptionToggle;
     
     private RenderMethod chosenMethod = RenderMethod.OneByOne;
 
@@ -271,6 +271,16 @@ public class SimulationView : MonoBehaviour
     {
         RoomManager.Instance.Material.scattering = value; 
         scatteringSlider.GetComponentInChildren<TMP_Text>().text = scatteringSlider.value.ToString("F2");
+    }
+
+    public void DistanceAttenuationToggleChanged(bool isOn) 
+    {
+        RenderManager.Instance.DistanceAttenuation = isOn;
+    }
+
+    public void AirAbsorptionToggleChanged(bool isOn)
+    {
+        RenderManager.Instance.AirAbsorption = isOn;
     }
 
     public void RenderMethodDropDownChanged(int index)

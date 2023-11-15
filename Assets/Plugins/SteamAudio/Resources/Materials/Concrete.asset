@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1cb82a87a4954a947923856a12b49b38, type: 3}
   m_Name: Concrete
   m_EditorClassIdentifier: 
-  lowFreqAbsorption: 0
-  midFreqAbsorption: 0
-  highFreqAbsorption: 0.19285715
-  scattering: 0.5928571
+  lowFreqAbsorption: 1
+  midFreqAbsorption: 1
+  highFreqAbsorption: 1
+  scattering: 0.7785714
   lowFreqTransmission: 0
   midFreqTransmission: 0.002
   highFreqTransmission: 0.001
