@@ -60,8 +60,10 @@ public class Recorder
     private void StartWriting(string name) 
     {
         fileStream = new FileStream(RenderManager.Instance.recordingPath + fileName, FileMode.Create);
+        
         // fileStream = new FileStream("/Users/duyx/Code/Jabra/python/renders/" + fileName, FileMode.Create);
         // fileStream = new FileStream(Application.persistentDataPath + "/" + fileName, FileMode.Create);
+        
         var emptyByte = new byte();
         for (int i = 0; i < headerSize; i++) // Preparing wav header
         {

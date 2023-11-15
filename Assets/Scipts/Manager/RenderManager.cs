@@ -41,7 +41,7 @@ public class RenderManager : MonoBehaviour
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
     
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
-    public static string folderPath = "/Users/duyx/Code/Jabra/python/renders";
+    public static string folderPath = "/Users/duyx/Code/Jabra/python/renders/";
     public string recordingPath;
     
     public static string defaultClipName = "sweep_48kHz";
@@ -101,11 +101,16 @@ public class RenderManager : MonoBehaviour
         // Try to load a persisted room or else fetch a default one.
         room = DataManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
 
-        speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
-        speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
-        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
-        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);
-        speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections = room.sources[selectedSpeaker].applyHRTFToReflections == 1;
+        // Load json data into our speaker array - TODO: could be done more clean by applying the json data directly into the object insted
+        for (int i = 0; i < speakers.Count; i++)
+        {
+            speakers[i].audioSource.volume = room.sources[i].volume;
+            speakers[i].steamAudioSource.directMixLevel = room.sources[i].directMixLevel;
+            speakers[i].steamAudioSource.reflectionsMixLevel = room.sources[i].reflectionMixLevel;
+            speakers[i].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[i].audioClip);
+            speakers[i].steamAudioSource.applyHRTFToReflections = room.sources[i].applyHRTFToReflections == 1;
+        }
+
     }
 
     // - Render Methods
@@ -125,7 +130,8 @@ public class RenderManager : MonoBehaviour
 
             case RenderMethod.OneByOne:
                 SteamAudioManager.Singleton.currentHRTF = sofaIndex;    // Selects which SOFA file should be used in the render
-                PlayAudio();                                            // Plays the first speaker
+                
+                PlayActiveSpeaker();                                            // Plays the first speaker
                 break;
 
             default:
@@ -151,7 +157,7 @@ public class RenderManager : MonoBehaviour
             case RenderMethod.OneByOne:
                 SelectNextSpeaker();            // Moves to next speaker  
 
-                PlayAudio();
+                PlayActiveSpeaker();
                 break;
 
             default:
@@ -170,7 +176,7 @@ public class RenderManager : MonoBehaviour
         recorder.StopRecording();
         
         logger.LogTitle();
-        foreach (var speaker in speakers)
+        foreach (Speaker speaker in speakers)
         {
             logger.Log(speaker: speaker);
         }
@@ -223,6 +229,11 @@ public class RenderManager : MonoBehaviour
     private void SelectNextSpeaker()
     {
         activeSpeaker++;
+    }
+
+    public void PlayActiveSpeaker()
+    {
+        speakers[activeSpeaker].audioSource.Play();
     }
 
     public void PlayAudio()

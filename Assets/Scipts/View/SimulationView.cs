@@ -51,6 +51,19 @@ public class SimulationView : MonoBehaviour
         }
     }
 
+    // Either starts or stops the simulation dependent on which state currently is active.
+    private void ToggleRender()
+    {
+        if (RenderManager.Instance.IsRendering)
+        {
+            RenderManager.Instance.StopRender(renderMethod: chosenMethod);
+        }
+        else
+        {
+            RenderManager.Instance.StartRender(renderMethod: chosenMethod, sofaIndex: sofaFileDropdown.value);
+        }
+    }
+
     // Called in the Update() MonoBehavior method
     private void HandleRender()
     {
@@ -100,19 +113,6 @@ public class SimulationView : MonoBehaviour
                     }
                     break;
             }
-    }
-
-    // Either starts or stops the simulation dependent on which state currently is active.
-    private void ToggleRender()
-    {
-        if (RenderManager.Instance.IsRendering)
-        {
-            RenderManager.Instance.StopRender(renderMethod: chosenMethod);
-        }
-        else
-        {
-            RenderManager.Instance.StartRender(renderMethod: chosenMethod, sofaIndex: sofaFileDropdown.value);
-        }
     }
 
     private void SetContent()

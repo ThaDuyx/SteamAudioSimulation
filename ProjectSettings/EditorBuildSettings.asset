@@ -9,12 +9,15 @@ EditorBuildSettings:
     path: Assets/Scenes/Canvas.unity
     guid: cb36472c1851f45d5a56b6dc8cdc8c67
   - enabled: 1
-    path: Assets/Scenes/AnotherRoom.unity
+    path: Assets/Scenes/SmallRoom.unity
     guid: d7411aa5fa79143a08e0a072d4333c8a
   - enabled: 1
-    path: Assets/Scenes/BiggerRoom.unity
+    path: Assets/Scenes/MediumRoom.unity
     guid: ef07e309c187e4efc9002c7f1e68745b
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
+    path: Assets/Scenes/BigRoom.unity
+    guid: a26214a5323bc4953b5cc6cd54483fc7
+  - enabled: 1
+    path: Assets/Scenes/TestScene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
   m_configObjects: {}
