@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SteamAudio;
 using UnityEngine;
 
 public enum RenderMethod
 {
-   OneByOne,    // Render all sources in a room with the same SOFA file
-   AllAtOnce,   // Render all sources together in a room with every individual SOFA files
-   RenderRooms  // Render all sources together in a room with every individual SOFA files, and different parameters
+   OneByOne,        // Render all sources in a room with the same SOFA file
+   AllAtOnce,       // Render all sources together in a room with every individual SOFA files
+   RenderRooms,     // Render all sources together in a room with every individual SOFA files, and different parameters
+   RenderUser       // Render the near field audio source
 }
 public class RenderManager : MonoBehaviour
 {
@@ -18,11 +20,11 @@ public class RenderManager : MonoBehaviour
     private AudioListener receiver;
     private UnityEngine.Vector3 defaultLocation;
     private List<Speaker> speakers;
+    private Speaker nearFieldSource;
     private Recorder recorder;
     private Room room;
     private Settings settings;
     private Timer timer;
-    private Logger logger;
 
     public int SpeakerCount { get { return speakers.Count; } }
     public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
@@ -36,8 +38,9 @@ public class RenderManager : MonoBehaviour
     public int SOFACount { get { return SteamAudioManager.Singleton.hrtfNames.Length; }}
     public string[] SOFANames { get { return SteamAudioManager.Singleton.hrtfNames; } }
     public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
-    public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
+    public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == 2; } } // hardcoded as 2 for now - this is used for only rendering the far field sofa files
     public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
+    public bool IsLastUserIndex = false;
 
     public string[] Directories { get { return Directory.GetDirectories(Paths.roomsPath); }}
     public string[] RenderPaths { get { return Directory.GetDirectories(SelectedRoomPath); }}
@@ -70,7 +73,6 @@ public class RenderManager : MonoBehaviour
     void Start()
     {
         recorder = new Recorder(outputSampleRate: SampleRate);
-        logger = new Logger();
         timer = gameObject.AddComponent<Timer>();
     }
 
@@ -85,11 +87,25 @@ public class RenderManager : MonoBehaviour
         
         foreach (var audioSource in audioSources)
         {
+            // skip user source but add it to a near field object
+            if (audioSource.CompareTag("MainCamera"))
+            {
+                SteamAudioSource steamNearFieldSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
+                nearFieldSource = new(audioSource, steamNearFieldSource);
+                continue;
+            }
+
             // Initialising speaker list
             SteamAudioSource steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
             Speaker speaker = new(audioSource, steamSource);
             speaker.audioSource.clip = Resources.Load<AudioClip>("Audio/" + Paths.defaultClipName);
-            speakers.Add(speaker);
+            
+            if (audioSource.CompareTag("MainCamera"))
+            {
+                nearFieldSource = speaker;
+            } else {
+                speakers.Add(speaker);
+            }
 
             // Calculating geometry
             speaker.DistanceToReceiver = Calculator.CalculateDistanceToReceiver(receiver.transform, audioSource.transform);
@@ -157,6 +173,12 @@ public class RenderManager : MonoBehaviour
                 PlayAudio();                                            // play the first speaker
                 break;
                 
+            case RenderMethod.RenderUser:
+                IsLastUserIndex = false;
+                List<int> userIndicies = GetUserSOFAIndices();
+                SteamAudioManager.Singleton.currentHRTF = userIndicies[0];
+                break;
+
             default: break;
         }
 
@@ -184,7 +206,12 @@ public class RenderManager : MonoBehaviour
             case RenderMethod.RenderRooms:
                 UpdateSOFA();                   // moves to next HRTF
                 PlayAudio();                    // play
-                // TODO: - randomize speaker, location or parameters
+                break;
+
+            case RenderMethod.RenderUser:
+                List<int> userIndicies = GetUserSOFAIndices();
+                SteamAudioManager.Singleton.currentHRTF = userIndicies[1];
+                IsLastUserIndex = true;
                 break;
 
             default: break;
@@ -200,20 +227,25 @@ public class RenderManager : MonoBehaviour
         IsRendering = false;
         timer.Stop();
         recorder.StopRecording();
-        logger.LogTitle();
+        Logger.LogTitle();
 
         switch (renderMethod)
         {
             case RenderMethod.AllAtOnce: case RenderMethod.RenderRooms:
                 SteamAudioManager.Singleton.currentHRTF = 0;       
-                logger.Log(speaker: speakers[selectedSpeaker]);
+                Logger.Log(speaker: speakers[selectedSpeaker]);
+                break;
+
+            case RenderMethod.RenderUser:
+                SteamAudioManager.Singleton.currentHRTF = 0;
+                Logger.Log(speaker: nearFieldSource);
                 break;
 
             case RenderMethod.OneByOne:
                 activeSpeaker = 0;
                 foreach (Speaker speaker in speakers)
                 {
-                    logger.Log(speaker: speaker);
+                    Logger.Log(speaker: speaker);
                 }
                 break;
             
@@ -269,37 +301,6 @@ public class RenderManager : MonoBehaviour
         speakers[activeSpeaker].audioSource.Play();
     }
 
-    public void PlaySelectedSpeaker()
-    {
-        speakers[selectedSpeaker].audioSource.Play();
-    }
-
-    public void PlayAudio()
-    {
-        speakers[selectedSpeaker].audioSource.Play();
-    }
-
-    public void PlayAllAudio()
-    {
-        foreach (Speaker speaker in speakers)
-        {
-            speaker.audioSource.Play();
-        }
-    }
-
-    public void StopAudio()
-    {
-        speakers[selectedSpeaker].audioSource.Stop();
-    }
-
-    public void StopAllAudio()
-    {
-        foreach (Speaker speaker in speakers)
-        {
-            speaker.audioSource.Stop();
-        }
-    }
-
     public void ToggleAudio()
     {
         if (speakers[selectedSpeaker].audioSource.isPlaying)
@@ -310,6 +311,16 @@ public class RenderManager : MonoBehaviour
         {
             PlayAudio();
         }
+    }
+
+    public void PlayAudio()
+    {
+        speakers[selectedSpeaker].audioSource.Play();
+    }
+
+    public void StopAudio()
+    {
+        speakers[selectedSpeaker].audioSource.Stop();
     }
 
     // Source Attributes
@@ -492,6 +503,10 @@ public class RenderManager : MonoBehaviour
         {
             recordingPath = SelectedRenderPath;
         }
+        else if (renderMethod == RenderMethod.RenderUser)
+        {
+            recordingPath = SelectedRoomPath + "/user/";
+        }
         else 
         {
             string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
@@ -538,6 +553,9 @@ public class RenderManager : MonoBehaviour
             SelectedRenderPath = SelectedRoomPath + "/" + "inroom" + folderCount.ToString() + "/";
             System.IO.Directory.CreateDirectory(SelectedRenderPath);
         }
+        
+        string userPath = SelectedRoomPath + "/user/";
+        System.IO.Directory.CreateDirectory(userPath);
 
         SelectedRenderPath = SelectedRoomPath + "/" + "inroom0" + "/";
     }
@@ -587,5 +605,20 @@ public class RenderManager : MonoBehaviour
     {
         UnityEngine.Vector3 newPosition = Calculator.CalculateNewPosition();
         receiver.transform.position = newPosition;
+    }
+
+    public List<int> GetUserSOFAIndices()
+    {
+        List<int> indices = new();
+
+        for (int i = 0; i < SOFACount; i++)
+        {
+            if (SOFANames[i].Contains("config_0"))
+            {
+                indices.Add(i);
+            }
+        }
+
+        return indices;
     }
 }

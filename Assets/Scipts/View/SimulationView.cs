@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -37,24 +38,27 @@ public class SimulationView : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            RenderManager.Instance.SetDefaultLocation();
-            RenderManager.Instance.CreateNewRoomFolder();
+            if (chosenMethod == RenderMethod.RenderRooms)
+            {
+                RenderManager.Instance.SetDefaultLocation();
+                RenderManager.Instance.CreateNewRoomFolder();
+            }
 
             ToggleRender();
 
             SetUI();
         }
 
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            print("L Clicked");
-
-            RenderManager.Instance.CreateNewRoomFolder();
-        }
-
         if (Input.GetKeyDown(KeyCode.O))
         {
             RenderManager.Instance.ToggleAudio();
+        }
+
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            List<int> indices = RenderManager.Instance.GetUserSOFAIndices();
+
+            indices.ForEach(index => Debug.Log(index));
         }
     }
 
@@ -131,7 +135,31 @@ public class SimulationView : MonoBehaviour
 
                             SetUI();
                         }
+                        else if (RenderManager.Instance.IsLastRoom)
+                        {
+                            chosenMethod = RenderMethod.RenderUser;
+
+                            ToggleRender();
+                        }
                     }
+                    break;
+                }
+
+                case RenderMethod.RenderUser:
+                {
+                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastUserIndex)
+                    {
+                        RenderManager.Instance.ContinueRender(renderMethod: RenderMethod.RenderUser);
+
+                        SetUI();
+                    } 
+                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastUserIndex)
+                    {
+                        RenderManager.Instance.StopRender(renderMethod: RenderMethod.RenderUser);
+                        
+                        SetUI();
+                    }
+
                     break;
                 }
 

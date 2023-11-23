@@ -2,12 +2,12 @@ using System;
 using System.IO;
 using SteamAudio;
 
-public class Logger
+struct Logger
 {
-    private string LogPath { get { return RenderManager.Instance.recordingPath + "log.txt"; } }
-    private string TimeStamp { get { return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); } }
+    private static string LogPath { get { return RenderManager.Instance.recordingPath + "log.txt"; } }
+    private static string TimeStamp { get { return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); } }
 
-    public void Log(Speaker speaker)
+    public static void Log(Speaker speaker)
     {
         using StreamWriter writer = new(LogPath, true);
 
@@ -16,7 +16,7 @@ public class Logger
         writer.Close();
     }
 
-    public void LogTitle()
+    public static void LogTitle()
     {
         using StreamWriter writer = new(LogPath, true);
 
@@ -25,7 +25,7 @@ public class Logger
         writer.Close();
     }
 
-    private void WriteTitle(StreamWriter writer)
+    private static void WriteTitle(StreamWriter writer)
     {
         writer.WriteLine($"Simulation Log : { TimeStamp }");
         writer.WriteLine("// --------------------");
@@ -42,7 +42,7 @@ public class Logger
         writer.WriteLine($"\nSample rate : { RenderManager.Instance.SampleRate } Hz" );
     }
 
-    private void WriteSpeakerInfo(StreamWriter writer, Speaker speakerInfo)
+    private static void WriteSpeakerInfo(StreamWriter writer, Speaker speakerInfo)
     {
         writer.WriteLine($"\nName : { speakerInfo.Name }");
         writer.WriteLine($"        Audio Clip : { speakerInfo.audioSource.clip.name }");
