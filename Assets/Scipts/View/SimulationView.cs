@@ -56,11 +56,6 @@ public class SimulationView : MonoBehaviour
         {
             RenderManager.Instance.ToggleAudio();
         }
-
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            RenderManager.Instance.ToggleAllAudio();
-        }
     }
 
     // Either starts or stops the simulation dependent on which state currently is active.

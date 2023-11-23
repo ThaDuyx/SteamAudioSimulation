@@ -26,7 +26,7 @@ public class RenderManager : MonoBehaviour
     private Calculator calculator;
     
     // Integer used for tracking which speaker should play during the OneByOne render method & for selecting speakers and configuring their parameters
-    private int activeSpeaker = 0, selectedSpeaker = 0, amountOfRooms = 0, activeRoom = 0;
+    private int activeSpeaker = 0, selectedSpeaker = 0, amountOfRooms = 0;
     private bool isAllSpeakersSelected = false, didStartUpComplete = false;
 
     public int SpeakerCount { get { return speakers.Count; } }
@@ -319,31 +319,6 @@ public class RenderManager : MonoBehaviour
         {
             PlayAudio();
         }
-    }
-
-    public void ToggleAllAudio()
-    {
-        if (AnySpeakerPlaying()) 
-        { 
-            StopAllAudio(); 
-        }
-        else 
-        { 
-            PlayAllAudio();
-        }
-    }
-
-    private bool AnySpeakerPlaying()
-    {
-        foreach (Speaker speaker in speakers)
-        {
-            if (speaker.audioSource.isPlaying)
-            {
-                return true;
-            }
-        }
-        
-        return false;
     }
 
     // Source Attributes
