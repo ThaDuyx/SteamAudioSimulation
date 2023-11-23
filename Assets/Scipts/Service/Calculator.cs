@@ -1,10 +1,9 @@
 using System;
 using UnityEngine;
 
-
-public class Calculator
+struct Calculator
 {
-    public float CalculateDistanceToReceiver(Transform receiverTransform, Transform speakerTransform)
+    public static float CalculateDistanceToReceiver(Transform receiverTransform, Transform speakerTransform)
     {
         // Calculate distance if objects are on the same axis 
         // or else use Pythagoras for finding triangle base (b) since we know (a) & (c)
@@ -27,7 +26,7 @@ public class Calculator
         }
     }
 
-    public float CalculateAzimuth(Transform receiverTransform, Transform speakerTransform)
+    public static float CalculateAzimuth(Transform receiverTransform, Transform speakerTransform)
     {
         // Retrieving the direction vector of the receiver
         Vector3 direction = speakerTransform.position - receiverTransform.position;
@@ -40,7 +39,7 @@ public class Calculator
         return  azimuth;
     }
 
-    public float CalculateElevation(Transform receiverTransform, Transform speakerTransform)
+    public static float CalculateElevation(Transform receiverTransform, Transform speakerTransform)
     {
         // Retrieving the direction vector of the receiver
         Vector3 direction = speakerTransform.position - receiverTransform.position;
@@ -56,7 +55,7 @@ public class Calculator
         return elevation;
     }
 
-    private float CalculateReflectionDistance(Transform receiverTransform, Transform speakerTransform, Transform wallTransform)
+    private static float CalculateReflectionDistance(Transform receiverTransform, Transform speakerTransform, Transform wallTransform)
     {
         // Get normal of the reflection
         float normal = Mathf.Abs(receiverTransform.position.x - speakerTransform.position.x);
@@ -73,7 +72,7 @@ public class Calculator
         return cReceiver + cSpeaker;
     }
 
-    public Vector3 CalculateNewPosition()
+    public static Vector3 CalculateNewPosition()
     {
         float randomX = UnityEngine.Random.Range(Dimensions.lowerThreshold.x, Dimensions.upperThreshold.x);
         float randomY = UnityEngine.Random.Range(Dimensions.lowerThreshold.y, Dimensions.upperThreshold.y);

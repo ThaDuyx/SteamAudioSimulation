@@ -23,11 +23,6 @@ public class RenderManager : MonoBehaviour
     private Settings settings;
     private Timer timer;
     private Logger logger;
-    private Calculator calculator;
-    
-    // Integer used for tracking which speaker should play during the OneByOne render method & for selecting speakers and configuring their parameters
-    private int activeSpeaker = 0, selectedSpeaker = 0, amountOfRooms = 0;
-    private bool isAllSpeakersSelected = false, didStartUpComplete = false;
 
     public int SpeakerCount { get { return speakers.Count; } }
     public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
@@ -42,14 +37,17 @@ public class RenderManager : MonoBehaviour
     public string[] SOFANames { get { return SteamAudioManager.Singleton.hrtfNames; } }
     public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
+    public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
+
     public string[] Directories { get { return Directory.GetDirectories(Paths.roomsPath); }}
     public string[] RenderPaths { get { return Directory.GetDirectories(SelectedRoomPath); }}
     public string SelectedRoomPath { get; private set; }
     public string SelectedRenderPath { get; private set; } 
-    public RenderMethod SelectedRenderMethod { get; private set; }
     
-    // Should be modified for specific needs - TODO: Change to dynamic folder structure
-    public string currentRenderPath = "/Users/duyx/Code/Jabra/python/renders/rooms/render0/";
+    public RenderMethod SelectedRenderMethod { get; private set; }
+    // Integer used for tracking which speaker should play during the OneByOne render method & for selecting speakers and configuring their parameters
+    private int activeSpeaker = 0, selectedSpeaker = 0, amountOfRooms = 0;
+    private bool isAllSpeakersSelected = false, didStartUpComplete = false;
     public string recordingPath;
 
     // Basic Unity MonoBehaviour method - Lifecycle process
@@ -85,8 +83,6 @@ public class RenderManager : MonoBehaviour
         AudioSource[] audioSources = FindObjectsOfType<AudioSource>();
         speakers = new List<Speaker>();
         
-        calculator = new Calculator();
-        
         foreach (var audioSource in audioSources)
         {
             // Initialising speaker list
@@ -96,9 +92,9 @@ public class RenderManager : MonoBehaviour
             speakers.Add(speaker);
 
             // Calculating geometry
-            speaker.DistanceToReceiver = calculator.CalculateDistanceToReceiver(receiver.transform, audioSource.transform);
-            speaker.Azimuth = calculator.CalculateAzimuth(receiver.transform, audioSource.transform);
-            speaker.Elevation = calculator.CalculateElevation(receiver.transform, audioSource.transform);
+            speaker.DistanceToReceiver = Calculator.CalculateDistanceToReceiver(receiver.transform, audioSource.transform);
+            speaker.Azimuth = Calculator.CalculateAzimuth(receiver.transform, audioSource.transform);
+            speaker.Elevation = Calculator.CalculateElevation(receiver.transform, audioSource.transform);
         }
         
         // Sorting speakers after name
@@ -126,11 +122,6 @@ public class RenderManager : MonoBehaviour
         if (!Directory.Exists(Paths.roomsPath))
         {
             System.IO.Directory.CreateDirectory(Paths.roomsPath);
-        }
-
-        if(!Directory.Exists(currentRenderPath))
-        {
-            System.IO.Directory.CreateDirectory(currentRenderPath);
         }
 
         settings = DataManager.Instance.LoadSettings();
@@ -582,8 +573,6 @@ public class RenderManager : MonoBehaviour
         DataManager.Instance.SaveSettings(settings: settings);
     }
 
-    public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
-
     public void SetDefaultLocation()
     {
         defaultLocation = receiver.gameObject.transform.position;
@@ -596,7 +585,7 @@ public class RenderManager : MonoBehaviour
 
     public void RandomiseLocation()
     {
-        UnityEngine.Vector3 newPosition = calculator.CalculateNewPosition();
+        UnityEngine.Vector3 newPosition = Calculator.CalculateNewPosition();
         receiver.transform.position = newPosition;
     }
 }
