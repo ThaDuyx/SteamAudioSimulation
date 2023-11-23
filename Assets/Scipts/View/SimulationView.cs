@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using static TMPro.TMP_Dropdown;
 
 public class SimulationView : MonoBehaviour
 {
@@ -218,7 +215,7 @@ public class SimulationView : MonoBehaviour
         LoadRoomFolderDropdownData();
         roomFolderDropdown.options.ForEach((option) => 
         {        
-            if (RenderManager.roomsPath + option.text + "/" == RenderManager.Instance.SelectedRoomPath)
+            if (Paths.roomsPath + option.text + "/" == RenderManager.Instance.SelectedRoomPath)
             {
                 int index = roomFolderDropdown.options.IndexOf(option);
                 roomFolderDropdown.value = index;
@@ -469,7 +466,7 @@ public class SimulationView : MonoBehaviour
         roomFolderDropdown.options.Clear();
         foreach (string directory in RenderManager.Instance.Directories)
         {
-            int pathLength = RenderManager.roomsPath.Length;
+            int pathLength = Paths.roomsPath.Length;
             string modifiedString = directory[pathLength..];
             roomFolderDropdown.options.Add(new TMP_Dropdown.OptionData() { text = modifiedString });
         }

@@ -42,17 +42,14 @@ public class RenderManager : MonoBehaviour
     public string[] SOFANames { get { return SteamAudioManager.Singleton.hrtfNames; } }
     public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
-    public string[] Directories { get { return Directory.GetDirectories(roomsPath); }}
+    public string[] Directories { get { return Directory.GetDirectories(Paths.roomsPath); }}
     public string[] RenderPaths { get { return Directory.GetDirectories(SelectedRoomPath); }}
     public string SelectedRoomPath { get; private set; }
     public string SelectedRenderPath { get; private set; } 
     public RenderMethod SelectedRenderMethod { get; private set; }
     
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
-    public static string folderPath = "/Users/duyx/Code/Jabra/python/renders/";
-    public static string roomsPath = "/Users/duyx/Code/Jabra/python/renders/rooms/";
     public string currentRenderPath = "/Users/duyx/Code/Jabra/python/renders/rooms/render0/";
-    public static string defaultClipName = "sweep_48kHz";
     public string recordingPath;
 
     // Basic Unity MonoBehaviour method - Lifecycle process
@@ -95,7 +92,7 @@ public class RenderManager : MonoBehaviour
             // Initialising speaker list
             SteamAudioSource steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
             Speaker speaker = new(audioSource, steamSource);
-            speaker.audioSource.clip = Resources.Load<AudioClip>("Audio/" + defaultClipName);
+            speaker.audioSource.clip = Resources.Load<AudioClip>("Audio/" + Paths.defaultClipName);
             speakers.Add(speaker);
 
             // Calculating geometry
@@ -121,14 +118,14 @@ public class RenderManager : MonoBehaviour
             speakers[i].steamAudioSource.airAbsorption = room.sources[i].airAbsorption == 1;
         }
 
-        if (!Directory.Exists(folderPath))
+        if (!Directory.Exists(Paths.folderPath))
         {
-            System.IO.Directory.CreateDirectory(folderPath);
+            System.IO.Directory.CreateDirectory(Paths.folderPath);
         }
 
-        if (!Directory.Exists(roomsPath))
+        if (!Directory.Exists(Paths.roomsPath))
         {
-            System.IO.Directory.CreateDirectory(roomsPath);
+            System.IO.Directory.CreateDirectory(Paths.roomsPath);
         }
 
         if(!Directory.Exists(currentRenderPath))
@@ -532,7 +529,7 @@ public class RenderManager : MonoBehaviour
         else 
         {
             string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
-            recordingPath = folderPath + timeStamp + "/";
+            recordingPath = Paths.folderPath + timeStamp + "/";
             System.IO.Directory.CreateDirectory(recordingPath);
         }
     }
@@ -560,9 +557,9 @@ public class RenderManager : MonoBehaviour
 
     public void CreateNewRoomFolder() 
     {
-        int folderCount = Directory.GetDirectories(roomsPath).Length;
-        System.IO.Directory.CreateDirectory(roomsPath + "render" + folderCount.ToString() + "/");
-        SelectedRoomPath = roomsPath + "render" + folderCount.ToString();
+        int folderCount = Directory.GetDirectories(Paths.roomsPath).Length;
+        System.IO.Directory.CreateDirectory(Paths.roomsPath + "render" + folderCount.ToString() + "/");
+        SelectedRoomPath = Paths.roomsPath + "render" + folderCount.ToString();
         
         CreateFoldersForRenders();
     }
@@ -611,7 +608,6 @@ public class RenderManager : MonoBehaviour
     }
 
     public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
-
 
     public void SetDefaultLocation()
     {
