@@ -44,32 +44,36 @@ public class DataManager : MonoBehaviour
         {
             string jsonData = File.ReadAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json");
             Room loadedRoomData = JsonUtility.FromJson<Room>(jsonData);
-            
-            return loadedRoomData;
-        }
-        else
-        {
-            // Make default room data
-            List<Source> sources = new();
-            for (int i = 0; i < amountOfSpeakers; i++)
-            {
-                sources.Add(new Source(
-                    name: "speaker" + (i + 1).ToString(), 
-                    volume: 0.091f, 
-                    directMixLevel: 0.2f, 
-                    reflectionMixLevel: 1.0f, 
-                    audioClip: "sweep_48kHz", 
-                    applyHRTFToReflections: 1));
-            }
-            
-            Room defaultRoom = new("room" + activeRoomIndex.ToString(), activeRoomIndex, sources);    
-            
-            // Serialize & write the data
-            string defaultRoomJson = JsonUtility.ToJson(defaultRoom, true);
-            File.WriteAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json", defaultRoomJson);
 
-            return defaultRoom;
+            if (loadedRoomData.sources.Count == amountOfSpeakers )
+            {
+                return loadedRoomData;
+            }
         }
+
+        // Make default room data
+        List<Source> sources = new();
+        for (int i = 0; i < amountOfSpeakers; i++)
+        {
+            sources.Add(new Source(
+                name: "speaker" + (i + 1).ToString(), 
+                volume: 0.091f, 
+                directMixLevel: 0.2f, 
+                reflectionMixLevel: 1.0f, 
+                audioClip: "sweep_48kHz", 
+                applyHRTFToReflections: 1,
+                airAbsorption: 0,
+                distanceAttenuation: 0));
+        }
+        
+        Room defaultRoom = new("room" + activeRoomIndex.ToString(), activeRoomIndex, sources);    
+        
+        // Serialize & write the data
+        string defaultRoomJson = JsonUtility.ToJson(defaultRoom, true);
+        File.WriteAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json", defaultRoomJson);
+
+        return defaultRoom;
+        
     }
 
     public List<string> GetAudioClips()
@@ -103,5 +107,55 @@ public class DataManager : MonoBehaviour
     private bool FileIsWAVorMP3(string fileName) 
     {
         return fileName.EndsWith(".wav", System.StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".mp3", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void SaveSettings(Settings settings) 
+    {
+        string persistentPath = Application.persistentDataPath + "/systemData/";
+        string json = JsonUtility.ToJson(settings, true);
+
+        try
+        {
+            // Check if the directory exists before attempting to write
+            if (!Directory.Exists(persistentPath))
+            {
+                Directory.CreateDirectory(Application.persistentDataPath + "/systemData/");
+            }
+
+            File.WriteAllText(persistentPath + "data.json", json);
+        }
+        catch 
+        {
+            Debug.LogError("Failed saving system data. Path not available");
+        }
+    }
+
+    public Settings LoadSettings()
+    {
+        string persistentPath = Application.persistentDataPath + "/systemData/";
+
+        if (File.Exists(persistentPath + "data.json"))
+        {
+            string jsonData = File.ReadAllText(persistentPath + "data.json");
+
+            Settings loadedSettings = JsonUtility.FromJson<Settings>(jsonData);
+
+            return loadedSettings;
+        }
+        else 
+        {
+            // Check if the directory exists before attempting to write
+            if (!Directory.Exists(persistentPath))
+            {
+                Directory.CreateDirectory(Application.persistentDataPath + "/systemData/");
+            }
+
+            Settings defaultSettings = new(selectedRoomDirectory: RenderManager.roomsPath, selectedRenderDirectory: "", selectedSOFA: 0, selectedRenderMethod: "OneByOne");
+            
+            string json = JsonUtility.ToJson(defaultSettings, true);
+            File.WriteAllText(persistentPath + "data.json", json);
+
+            return defaultSettings;
+        }
     }
 }

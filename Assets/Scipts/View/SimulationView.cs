@@ -1,16 +1,21 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static TMPro.TMP_Dropdown;
 
 public class SimulationView : MonoBehaviour
 {
     [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
-    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown;
+    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown, roomFolderDropdown, renderFolderDropdown;
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle, distAttenuationToggle, airAbsorptionToggle;
+    [SerializeField] private TMP_InputField roomsInputField; 
+    [SerializeField] private Button addRoomFolderButton, deleteRoomFolderButton, addRenderFolderButton, deleteRenderFolderButton, defaultLocationButton, locationRandomiserButton;
     
     private RenderMethod chosenMethod = RenderMethod.OneByOne;
 
@@ -35,9 +40,19 @@ public class SimulationView : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
+            RenderManager.Instance.SetDefaultLocation();
+            RenderManager.Instance.CreateNewRoomFolder();
+
             ToggleRender();
 
             SetUI();
+        }
+
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            print("L Clicked");
+
+            RenderManager.Instance.CreateNewRoomFolder();
         }
 
         if (Input.GetKeyDown(KeyCode.O))
@@ -84,6 +99,7 @@ public class SimulationView : MonoBehaviour
         switch (chosenMethod)
             {
                 case RenderMethod.AllAtOnce:
+                {
                     if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
                     {
                         RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
@@ -97,8 +113,38 @@ public class SimulationView : MonoBehaviour
                         SetUI();
                     }
                     break;
+                }
+
+                case RenderMethod.RenderRooms:
+                {
+                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
+                    {
+                        RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
+
+                        SetUI();
+                    }
+                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA)
+                    {
+                        RenderManager.Instance.StopRender(renderMethod: chosenMethod);
+
+                        SetUI();
+
+                        if (!RenderManager.Instance.IsLastRoom)
+                        {
+                            RenderManager.Instance.UpdateSelectedSpeaker();
+                            RenderManager.Instance.UpdateRenderPath();
+                            RenderManager.Instance.GoToDefaultLocation();
+                            
+                            ToggleRender();
+
+                            SetUI();
+                        }
+                    }
+                    break;
+                }
 
                 case RenderMethod.OneByOne:
+                {
                     if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker) 
                     {
                         RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
@@ -112,6 +158,9 @@ public class SimulationView : MonoBehaviour
                         SetUI();
                     }
                     break;
+                }
+
+                default: break;
             }
     }
 
@@ -123,6 +172,7 @@ public class SimulationView : MonoBehaviour
         {
             speakerDropdown.options.Add(new TMP_Dropdown.OptionData() { text = speakerName });
         }
+        speakerDropdown.options.Add(new TMP_Dropdown.OptionData() { text = "All speakers" });
         speakerDropdown.RefreshShownValue();
 
         audioClipDropdown.options.Clear();
@@ -134,7 +184,7 @@ public class SimulationView : MonoBehaviour
         roomDropdown.options.Clear();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
         {
-            // We don't want the first scene since it is just the Canvas UI
+            // we don't want the first scene since it is just the Canvas UI
             if (i != 0)
             {
                 roomDropdown.options.Add(new TMP_Dropdown.OptionData() { text = "Room " + i });
@@ -147,6 +197,15 @@ public class SimulationView : MonoBehaviour
         {
             renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
         }
+        renderMethodDropdown.options.ForEach((option) => 
+        {
+            if (option.text == RenderManager.Instance.SelectedRenderMethod.ToString())
+            {
+                int index = renderMethodDropdown.options.IndexOf(option);
+                renderMethodDropdown.value = index;
+
+            }
+        });
         renderMethodDropdown.RefreshShownValue();
 
         sofaFileDropdown.options.Clear();
@@ -155,6 +214,30 @@ public class SimulationView : MonoBehaviour
             sofaFileDropdown.options.Add(new TMP_Dropdown.OptionData() { text = sofaFile});
         }
         sofaFileDropdown.RefreshShownValue();
+
+        LoadRoomFolderDropdownData();
+        roomFolderDropdown.options.ForEach((option) => 
+        {        
+            if (RenderManager.roomsPath + option.text + "/" == RenderManager.Instance.SelectedRoomPath)
+            {
+                int index = roomFolderDropdown.options.IndexOf(option);
+                roomFolderDropdown.value = index;
+            }
+        });
+        roomFolderDropdown.RefreshShownValue();
+
+        LoadRenderFolderDropdownData();
+        renderFolderDropdown.options.ForEach((option) => 
+        {
+            if (RenderManager.Instance.SelectedRoomPath + option.text + "/" == RenderManager.Instance.SelectedRenderPath)
+            {
+                int index = renderFolderDropdown.options.IndexOf(option);
+                renderFolderDropdown.value = index;
+            }
+        });
+        renderFolderDropdown.RefreshShownValue();
+
+        RenderManager.Instance.ToggleStartUp();
     }
 
     // Updates elements in the UI
@@ -215,7 +298,6 @@ public class SimulationView : MonoBehaviour
     public void HRTFToggleChanged(bool isOn)
     {
         RenderManager.Instance.ApplyHRTFToReflections = isOn;
-        RenderManager.Instance.PersistRoom();
     }
 
     public void BounceSliderChanged(float value)
@@ -276,16 +358,31 @@ public class SimulationView : MonoBehaviour
     public void DistanceAttenuationToggleChanged(bool isOn) 
     {
         RenderManager.Instance.DistanceAttenuation = isOn;
+        RenderManager.Instance.PersistRoom();
     }
 
     public void AirAbsorptionToggleChanged(bool isOn)
     {
         RenderManager.Instance.AirAbsorption = isOn;
+        RenderManager.Instance.PersistRoom();
     }
 
     public void RenderMethodDropDownChanged(int index)
     {
         chosenMethod = (RenderMethod)index;
+        RenderManager.Instance.SetRenderMethod(renderMethod: (RenderMethod)index);
+    }
+
+    public void RoomsInputFieldChanged(string input)
+    {
+        if (int.TryParse(input, out int amountOfRooms) && amountOfRooms < 20)
+        {
+            RenderManager.Instance.SetAmountOfRooms(amount: amountOfRooms);
+        }
+        else
+        {
+            Console.WriteLine("The string is not a valid integer or too high of a value");
+        }
     }
 
     public void RoomDropdownChanged(int index)
@@ -295,6 +392,20 @@ public class SimulationView : MonoBehaviour
         
         // Call-back function that reloads the UI with new data when scenes has been changed
         RoomManager.OnSceneUnloaded += HandleSceneUnloaded;
+    }
+
+    public void RoomFolderDropdownChanged(int index)
+    {
+        RenderManager.Instance.SetRoomPath(index: index);
+        
+        LoadRenderFolderDropdownData();
+        renderFolderDropdown.RefreshShownValue();
+    }
+
+    public void RenderFolderDropdownChanged(int index)
+    {
+        // TODO: Change the render folder of interest
+        RenderManager.Instance.SetRenderPath(index: index);
     }
 
     private void HandleSceneUnloaded()
@@ -307,6 +418,35 @@ public class SimulationView : MonoBehaviour
     public void SliderEndDrag()
     {
         RenderManager.Instance.PersistRoom();
+    }
+
+    public void AddRoomFolderButtonPressed()
+    {
+        RenderManager.Instance.CreateNewRoomFolder();
+        LoadRoomFolderDropdownData();
+        roomFolderDropdown.value = roomFolderDropdown.options.Count - 1;
+        renderFolderDropdown.ClearOptions();
+    }
+
+    public void DeleteRoomFolderButtonPressed()
+    {
+        RenderManager.Instance.DeleteRoomFolder();
+        LoadRoomFolderDropdownData();
+        roomFolderDropdown.value = roomFolderDropdown.options.Count - 1;
+    }
+
+    public void AddRenderFolderButtonPressed()
+    {
+        RenderManager.Instance.CreateNewRenderFolder();
+        LoadRenderFolderDropdownData();
+        renderFolderDropdown.value = renderFolderDropdown.options.Count - 1;
+    }
+
+    public void DeleteRenderFolderButtonPressed()
+    {
+        RenderManager.Instance.DeleteRenderFolder();
+        LoadRenderFolderDropdownData();
+        renderFolderDropdown.value = renderFolderDropdown.options.Count - 1;
     }
 
     // Used for retrieving the index from the selected audio clip
@@ -322,5 +462,46 @@ public class SimulationView : MonoBehaviour
         }
 
         return 0;
+    }
+
+    private void LoadRoomFolderDropdownData()
+    {
+        roomFolderDropdown.options.Clear();
+        foreach (string directory in RenderManager.Instance.Directories)
+        {
+            int pathLength = RenderManager.roomsPath.Length;
+            string modifiedString = directory[pathLength..];
+            roomFolderDropdown.options.Add(new TMP_Dropdown.OptionData() { text = modifiedString });
+        }
+    }
+
+    private void LoadRenderFolderDropdownData()
+    {
+        if (RenderManager.Instance.RenderPaths.Length != 0)
+        {
+            renderFolderDropdown.options.Clear();
+            foreach (string renderFolder in RenderManager.Instance.RenderPaths)
+            {
+                int pathLength = RenderManager.Instance.SelectedRoomPath.Length;
+                string modifiedString = renderFolder[pathLength..];
+                renderFolderDropdown.options.Add(new TMP_Dropdown.OptionData() { text = modifiedString });
+            }
+        }
+        else 
+        {
+            renderFolderDropdown.options.Clear();
+        }
+        
+        renderFolderDropdown.RefreshShownValue();
+    }
+
+    public void DefaultLocationPressed()
+    {
+        RenderManager.Instance.GoToDefaultLocation();
+    }
+
+    public void LocationRandomiserPressed()
+    {
+        RenderManager.Instance.RandomiseLocation();
     }
 }

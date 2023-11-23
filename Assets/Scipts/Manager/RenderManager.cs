@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using SteamAudio;
 using UnityEngine;
 
 public enum RenderMethod
 {
-   OneByOne,
-   AllAtOnce
+   OneByOne,    // Render all sources in a room with the same SOFA file
+   AllAtOnce,   // Render all sources together in a room with every individual SOFA files
+   RenderRooms  // Render all sources together in a room with every individual SOFA files, and different parameters
 }
 public class RenderManager : MonoBehaviour
 {
@@ -14,17 +16,18 @@ public class RenderManager : MonoBehaviour
     public static RenderManager Instance { get; private set; }
 
     private AudioListener receiver;
+    private UnityEngine.Vector3 defaultLocation;
     private List<Speaker> speakers;
     private Recorder recorder;
     private Room room;
+    private Settings settings;
     private Timer timer;
     private Logger logger;
     private Calculator calculator;
     
-    // Integer used for tracking which speaker should play during the OneByOne render method
-    private int activeSpeaker = 0;
-    // Integer used for selecting speakers and configuring their parameters
-    private int selectedSpeaker = 0;
+    // Integer used for tracking which speaker should play during the OneByOne render method & for selecting speakers and configuring their parameters
+    private int activeSpeaker = 0, selectedSpeaker = 0, amountOfRooms = 0, activeRoom = 0;
+    private bool isAllSpeakersSelected = false, didStartUpComplete = false;
 
     public int SpeakerCount { get { return speakers.Count; } }
     public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; } }
@@ -39,12 +42,18 @@ public class RenderManager : MonoBehaviour
     public string[] SOFANames { get { return SteamAudioManager.Singleton.hrtfNames; } }
     public string ActiveSOFAName { get { return SteamAudioManager.Singleton.hrtfNames[SteamAudioManager.Singleton.currentHRTF]; } }
     public bool IsLastSOFA { get { return SteamAudioManager.Singleton.currentHRTF == SteamAudioManager.Singleton.hrtfNames.Length - 1; } }
+    public string[] Directories { get { return Directory.GetDirectories(roomsPath); }}
+    public string[] RenderPaths { get { return Directory.GetDirectories(SelectedRoomPath); }}
+    public string SelectedRoomPath { get; private set; }
+    public string SelectedRenderPath { get; private set; } 
+    public RenderMethod SelectedRenderMethod { get; private set; }
     
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
     public static string folderPath = "/Users/duyx/Code/Jabra/python/renders/";
-    public string recordingPath;
-    
+    public static string roomsPath = "/Users/duyx/Code/Jabra/python/renders/rooms/";
+    public string currentRenderPath = "/Users/duyx/Code/Jabra/python/renders/rooms/render0/";
     public static string defaultClipName = "sweep_48kHz";
+    public string recordingPath;
 
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
@@ -109,8 +118,29 @@ public class RenderManager : MonoBehaviour
             speakers[i].steamAudioSource.reflectionsMixLevel = room.sources[i].reflectionMixLevel;
             speakers[i].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[i].audioClip);
             speakers[i].steamAudioSource.applyHRTFToReflections = room.sources[i].applyHRTFToReflections == 1;
+            speakers[i].steamAudioSource.airAbsorption = room.sources[i].airAbsorption == 1;
         }
 
+        if (!Directory.Exists(folderPath))
+        {
+            System.IO.Directory.CreateDirectory(folderPath);
+        }
+
+        if (!Directory.Exists(roomsPath))
+        {
+            System.IO.Directory.CreateDirectory(roomsPath);
+        }
+
+        if(!Directory.Exists(currentRenderPath))
+        {
+            System.IO.Directory.CreateDirectory(currentRenderPath);
+        }
+
+        settings = DataManager.Instance.LoadSettings();
+
+        SelectedRoomPath = settings.selectedRoomDirectory;
+        SelectedRenderPath = settings.selectedRenderDirectory;
+        SelectedRenderMethod = (RenderMethod)Enum.Parse(typeof(RenderMethod), settings.selectedRenderMethod);
     }
 
     // - Render Methods
@@ -119,23 +149,27 @@ public class RenderManager : MonoBehaviour
     {
         IsRendering = true;
         
-        SetRecordingPath();                                             // updates the output for recordings
+        SetRecordingPath(renderMethod);                                 // updates the output for recordings
         
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
                 UpdateSOFA();                                           // increments array of SOFA files to our
-                RewindAndPlayAudioSources();                            // Resets and play every audio source in the current scene
+                RewindAndPlayAudioSources();                            // reset and play every audio source in the current scene
                 break;
 
             case RenderMethod.OneByOne:
-                SteamAudioManager.Singleton.currentHRTF = sofaIndex;    // Selects which SOFA file should be used in the render
-                
-                PlayActiveSpeaker();                                            // Plays the first speaker
+                SteamAudioManager.Singleton.currentHRTF = sofaIndex;    // select which SOFA file should be used in the render
+                PlayActiveSpeaker();                                    // play the first speaker
                 break;
 
-            default:
+            case RenderMethod.RenderRooms:
+                RandomiseLocation();
+                UpdateSOFA();                                           // increments array of SOFA files to our
+                PlayAudio();                                            // play the first speaker
                 break;
+                
+            default: break;
         }
 
         recorder.ToggleRecording();
@@ -145,27 +179,31 @@ public class RenderManager : MonoBehaviour
     // Updates the state to continue rendering with the next HRTF in the list
     public void ContinueRender(RenderMethod renderMethod)
     {
-        recorder.ToggleRecording();             // Stop previous recording
+        recorder.ToggleRecording();             // stop previous recording
 
         switch(renderMethod)
         {
             case RenderMethod.AllAtOnce:
-                UpdateSOFA();                   // Moves to next HRTF
-                RewindAndPlayAudioSources();        
+                UpdateSOFA();                   // moves to next HRTF
+                RewindAndPlayAudioSources();    // replay the audio sources    
                 break;
 
             case RenderMethod.OneByOne:
-                SelectNextSpeaker();            // Moves to next speaker  
-
-                PlayActiveSpeaker();
+                SelectNextSpeaker();            // moves to next speaker  
+                PlayActiveSpeaker();            // play
                 break;
 
-            default:
+            case RenderMethod.RenderRooms:
+                UpdateSOFA();                   // moves to next HRTF
+                PlayAudio();                    // play
+                // TODO: - randomize speaker, location or parameters
                 break;
+
+            default: break;
         }
 
-        recorder.ToggleRecording();             // Start new recording
-        timer.Begin(SimulationLength, renderMethod);          // Start new timer
+        recorder.ToggleRecording();                           // start new recording
+        timer.Begin(SimulationLength, renderMethod);          // start new timer
     }
 
     // Stop rendering process
@@ -174,22 +212,24 @@ public class RenderManager : MonoBehaviour
         IsRendering = false;
         timer.Stop();
         recorder.StopRecording();
-        
         logger.LogTitle();
-        foreach (Speaker speaker in speakers)
-        {
-            logger.Log(speaker: speaker);
-        }
 
         switch (renderMethod)
         {
-            case RenderMethod.AllAtOnce:
+            case RenderMethod.AllAtOnce: case RenderMethod.RenderRooms:
                 SteamAudioManager.Singleton.currentHRTF = 0;       
+                logger.Log(speaker: speakers[selectedSpeaker]);
                 break;
 
             case RenderMethod.OneByOne:
                 activeSpeaker = 0;
+                foreach (Speaker speaker in speakers)
+                {
+                    logger.Log(speaker: speaker);
+                }
                 break;
+            
+            default: break;
         }
     }
 
@@ -226,6 +266,11 @@ public class RenderManager : MonoBehaviour
         }
     }
 
+    public void UpdateSelectedSpeaker()
+    {
+        selectedSpeaker++;   
+    }
+
     private void SelectNextSpeaker()
     {
         activeSpeaker++;
@@ -234,6 +279,11 @@ public class RenderManager : MonoBehaviour
     public void PlayActiveSpeaker()
     {
         speakers[activeSpeaker].audioSource.Play();
+    }
+
+    public void PlaySelectedSpeaker()
+    {
+        speakers[selectedSpeaker].audioSource.Play();
     }
 
     public void PlayAudio()
@@ -246,7 +296,6 @@ public class RenderManager : MonoBehaviour
         foreach (Speaker speaker in speakers)
         {
             speaker.audioSource.Play();
-            Debug.Log(speaker.Name + " playing");
         }
     }
 
@@ -300,6 +349,7 @@ public class RenderManager : MonoBehaviour
         return false;
     }
 
+    // Source Attributes
     public int RealTimeBounces
     {
         get { return SteamAudioSettings.Singleton.realTimeBounces; }
@@ -314,26 +364,52 @@ public class RenderManager : MonoBehaviour
     public float Volume
     {
         get { return speakers[selectedSpeaker].audioSource.volume; }
-        set { speakers[selectedSpeaker].audioSource.volume = value; }
+        set {
+                if (isAllSpeakersSelected) 
+                {
+                    speakers.ForEach(speaker => speaker.audioSource.volume = value);
+                }
+                else 
+                {
+                    speakers[selectedSpeaker].audioSource.volume = value; 
+                }
+            }
     }
 
     public float DirectMixLevel
     {
         get { return speakers[selectedSpeaker].steamAudioSource.directMixLevel; }
-        set { speakers[selectedSpeaker].steamAudioSource.directMixLevel = value; }
+        set 
+        { 
+            if (isAllSpeakersSelected) 
+            {
+                speakers.ForEach(speaker => speaker.steamAudioSource.directMixLevel = value);
+            }
+            else 
+            {
+                speakers[selectedSpeaker].steamAudioSource.directMixLevel = value; 
+            }
+        }
     }
 
     public float ReflectionMixLevel
     {
         get { return speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel; }
-        set { speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; }
+        set 
+        { 
+            if (isAllSpeakersSelected) 
+            {
+                speakers.ForEach(speaker => speaker.steamAudioSource.reflectionsMixLevel = value);
+            }
+            else 
+            {
+                speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; 
+            }
+        }
     }
 
     public string AudioClip { 
-        get 
-        {
-            return speakers[selectedSpeaker].audioSource.clip.name; 
-        } 
+        get { return speakers[selectedSpeaker].audioSource.clip.name; } 
         set 
         { 
             // Deletes the 4 last characters of the string meaning either '.wav' or '.mp3'. Unity does not use the file type when searching in the library.
@@ -347,24 +423,62 @@ public class RenderManager : MonoBehaviour
     public bool AirAbsorption
     {
         get { return speakers[selectedSpeaker].steamAudioSource.airAbsorption; }
-        set { speakers[selectedSpeaker].steamAudioSource.airAbsorption = value; }
+        set 
+        {
+            if (isAllSpeakersSelected)
+            {
+                speakers.ForEach(speaker => speaker.steamAudioSource.airAbsorption = value);
+            }
+            else 
+            {
+                speakers[selectedSpeaker].steamAudioSource.airAbsorption = value;
+            }
+        }
     }
 
     public bool DistanceAttenuation
     {
         get { return speakers[selectedSpeaker].steamAudioSource.distanceAttenuation; }
-        set { speakers[selectedSpeaker].steamAudioSource.distanceAttenuation = value; }
+        set 
+        { 
+            if (isAllSpeakersSelected)
+            {
+                speakers.ForEach(speaker => speaker.steamAudioSource.distanceAttenuation = value);
+            }
+            else 
+            {
+                speakers[selectedSpeaker].steamAudioSource.distanceAttenuation = value; 
+            }
+        }
     }
 
     public void PersistRoom()
     {
-        room.sources[selectedSpeaker].volume = Volume;
-        room.sources[selectedSpeaker].directMixLevel = DirectMixLevel;
-        room.sources[selectedSpeaker].reflectionMixLevel = ReflectionMixLevel;
-        room.sources[selectedSpeaker].audioClip = AudioClip;
-        room.sources[selectedSpeaker].applyHRTFToReflections = ApplyHRTFToReflections ? 1 : 0;
-        
-        DataManager.Instance.SaveRoomData(room: room);
+        // if the all speakers option were selected we will iterate over all speakers and save it in json format
+        if (isAllSpeakersSelected) 
+        {
+            for (int i = 0; i < speakers.Count; i++)
+            {
+                SetRoomVariables(index: i);
+                DataManager.Instance.SaveRoomData(room: room);
+            }
+        }
+        else 
+        {
+            SetRoomVariables(index: selectedSpeaker);
+            DataManager.Instance.SaveRoomData(room: room);
+        }
+    }
+
+    private void SetRoomVariables(int index)
+    {
+        room.sources[index].volume = Volume;
+        room.sources[index].directMixLevel = DirectMixLevel;
+        room.sources[index].reflectionMixLevel = ReflectionMixLevel;
+        room.sources[index].audioClip = AudioClip;
+        room.sources[index].applyHRTFToReflections = ApplyHRTFToReflections ? 1 : 0;
+        room.sources[index].airAbsorption = AirAbsorption ? 1 : 0;
+        room.sources[index].distanceAttenuation = DistanceAttenuation ? 1 : 0;
     }
     
     public string[] GetSpeakerNames()
@@ -381,19 +495,137 @@ public class RenderManager : MonoBehaviour
 
     public void SetSelectedSpeaker(int index)
     {
-        selectedSpeaker = index;
+        // If index is the same as the .Count of speakers it means the all speakers option were selected
+        if (index == speakers.Count )
+        {
+            isAllSpeakersSelected = true;
+        }
+        else 
+        {
+            isAllSpeakersSelected = false;
+            selectedSpeaker = index;
 
-        speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
-        speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
-        speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
-        speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);
-        speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections = room.sources[selectedSpeaker].applyHRTFToReflections == 1;
+            speakers[selectedSpeaker].audioSource.volume = room.sources[selectedSpeaker].volume;
+            speakers[selectedSpeaker].steamAudioSource.directMixLevel = room.sources[selectedSpeaker].directMixLevel;
+            speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = room.sources[selectedSpeaker].reflectionMixLevel;
+            speakers[selectedSpeaker].audioSource.clip = Resources.Load<AudioClip>("Audio/" + room.sources[selectedSpeaker].audioClip);
+            speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections = room.sources[selectedSpeaker].applyHRTFToReflections == 1;
+        }
     }
 
-    private void SetRecordingPath()
+    public void ToggleStartUp()
     {
-        string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
-        recordingPath = folderPath + timeStamp + "/";
-        System.IO.Directory.CreateDirectory(recordingPath);
+        didStartUpComplete = !didStartUpComplete;
+    }
+
+    public void SetAmountOfRooms(int amount)
+    {
+        amountOfRooms = amount;
+    }
+
+    private void SetRecordingPath(RenderMethod renderMethod)
+    {
+        if (renderMethod == RenderMethod.RenderRooms)
+        {
+            recordingPath = SelectedRenderPath;
+        }
+        else 
+        {
+            string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
+            recordingPath = folderPath + timeStamp + "/";
+            System.IO.Directory.CreateDirectory(recordingPath);
+        }
+    }
+
+    public void SetRoomPath(int index)
+    {
+        SelectedRoomPath = Directories[index] + "/";
+        settings.selectedRoomDirectory = SelectedRoomPath;
+
+        if (RenderPaths.Length != 0 && didStartUpComplete)
+        {
+            SetRenderPath(0);
+        }
+
+        DataManager.Instance.SaveSettings(settings);
+    }
+
+    public void SetRenderPath(int index)
+    {
+        SelectedRenderPath = RenderPaths[index] + "/";
+        settings.selectedRenderDirectory = SelectedRenderPath;
+
+        DataManager.Instance.SaveSettings(settings);
+    }
+
+    public void CreateNewRoomFolder() 
+    {
+        int folderCount = Directory.GetDirectories(roomsPath).Length;
+        System.IO.Directory.CreateDirectory(roomsPath + "render" + folderCount.ToString() + "/");
+        SelectedRoomPath = roomsPath + "render" + folderCount.ToString();
+        
+        CreateFoldersForRenders();
+    }
+
+    private void CreateFoldersForRenders()
+    {
+        for (int i = 0; i <= speakers.Count - 1; i++)
+        {
+            int folderCount = Directory.GetDirectories(SelectedRoomPath).Length;
+            SelectedRenderPath = SelectedRoomPath + "/" + "inroom" + folderCount.ToString() + "/";
+            System.IO.Directory.CreateDirectory(SelectedRenderPath);
+        }
+
+        SelectedRenderPath = SelectedRoomPath + "/" + "inroom0" + "/";
+    }
+
+    public void CreateNewRenderFolder()
+    {
+        int folderCount = Directory.GetDirectories(SelectedRoomPath).Length;
+        SelectedRenderPath = SelectedRoomPath + "inroom" + folderCount.ToString() + "/";
+        System.IO.Directory.CreateDirectory(SelectedRenderPath);
+    }
+
+    public void UpdateRenderPath()
+    {
+        SelectedRenderPath = SelectedRoomPath + "/" + "inroom" + selectedSpeaker.ToString() + "/";
+    }
+
+    public void DeleteRoomFolder()
+    {
+        System.IO.Directory.Delete(SelectedRoomPath);
+        SelectedRoomPath = Directories[0];
+    }
+
+    public void DeleteRenderFolder()
+    {
+        System.IO.Directory.Delete(SelectedRenderPath);
+    }
+
+    public void SetRenderMethod(RenderMethod renderMethod)
+    {
+        SelectedRenderMethod = renderMethod;
+        settings.selectedRenderMethod = renderMethod.ToString();
+
+        DataManager.Instance.SaveSettings(settings: settings);
+    }
+
+    public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
+
+
+    public void SetDefaultLocation()
+    {
+        defaultLocation = receiver.gameObject.transform.position;
+    }
+
+    public void GoToDefaultLocation()
+    {
+        receiver.transform.position = defaultLocation;
+    }
+
+    public void RandomiseLocation()
+    {
+        UnityEngine.Vector3 newPosition = calculator.CalculateNewPosition();
+        receiver.transform.position = newPosition;
     }
 }

@@ -60,6 +60,7 @@ public class Timer : MonoBehaviour
         {
             RenderMethod.AllAtOnce => RenderManager.Instance.SOFACount * duration,
             RenderMethod.OneByOne => RenderManager.Instance.SpeakerCount * RenderManager.Instance.SimulationLength,
+            RenderMethod.RenderRooms => (RenderManager.Instance.SOFACount - 1) * duration,
             _ => 0.0f,
         };
     }

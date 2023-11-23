@@ -1,12 +1,12 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 // Reference: http://abolfazltanha.com/Source-codes-92045/
 // Youtube link: https://www.youtube.com/watch?v=tI0PuFlfMfI
 public class Recorder
 {
-    internal string FILENAME;
     private readonly int headerSize = 44; // Default for uncompressed wav
     private bool _isRecording = false;
     private FileStream fileStream;
@@ -27,18 +27,18 @@ public class Recorder
             StopRecording();
         }
         else 
-        {
-            string name = RenderManager.Instance.ActiveSpeakerName + "_" + RenderManager.Instance.ActiveSOFAName;
-            
-            StartRecording(name);
+        {   
+            StartRecording();
         }
     }
 
-    public void StartRecording(string microphoneName) 
+    public void StartRecording() 
     {
-        FILENAME = microphoneName;
+        string sofaFile = RenderManager.Instance.ActiveSOFAName;
+        string micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "").Insert(1, "_");
+        string concatenatedString = "mic_" + micPairIndicator;
 
-        fileName = Path.GetFileNameWithoutExtension(FILENAME) + ".wav";
+        fileName = Path.GetFileNameWithoutExtension(concatenatedString) + ".wav";
 
         if (!_isRecording)
         {

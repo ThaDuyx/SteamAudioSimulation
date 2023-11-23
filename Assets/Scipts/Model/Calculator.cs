@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 
+
 public class Calculator
 {
     public float CalculateDistanceToReceiver(Transform receiverTransform, Transform speakerTransform)
@@ -70,5 +71,16 @@ public class Calculator
         float cSpeaker = Mathf.Sqrt(Mathf.Pow(aSpeaker, 2) + Mathf.Pow(bSpeaker, 2));
 
         return cReceiver + cSpeaker;
+    }
+
+    public Vector3 CalculateNewPosition()
+    {
+        float randomX = UnityEngine.Random.Range(Dimensions.lowerThreshold.x, Dimensions.upperThreshold.x);
+        float randomY = UnityEngine.Random.Range(Dimensions.lowerThreshold.y, Dimensions.upperThreshold.y);
+        float randomZ = UnityEngine.Random.Range(Dimensions.lowerThreshold.z, Dimensions.upperThreshold.z);
+
+        Vector3 newPosition = new(randomX, randomY, randomZ);
+
+        return newPosition;
     }
 }
