@@ -17,6 +17,9 @@ public class RenderManager : MonoBehaviour
     // Singleton object
     public static RenderManager Instance { get; private set; }
 
+    public delegate void RenderComplete();
+    public static event RenderCompleteAction OnSceneUnloaded;
+
     private AudioListener receiver;
     private UnityEngine.Vector3 defaultLocation;
     private List<Speaker> speakers;
@@ -42,6 +45,7 @@ public class RenderManager : MonoBehaviour
     public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
     public bool IsLastUserIndex = false;
 
+
     public string[] Directories { get { return Directory.GetDirectories(Paths.roomsPath); }}
     public string[] RenderPaths { get { return Directory.GetDirectories(SelectedRoomPath); }}
     public string SelectedRoomPath { get; private set; }
@@ -49,7 +53,7 @@ public class RenderManager : MonoBehaviour
     
     public RenderMethod SelectedRenderMethod { get; private set; }
     // Integer used for tracking which speaker should play during the OneByOne render method & for selecting speakers and configuring their parameters
-    private int activeSpeaker = 0, selectedSpeaker = 0, amountOfRooms = 0;
+    private int activeSpeaker = 0, selectedSpeaker = 0, selectedUserIndex = 0;
     private bool isAllSpeakersSelected = false, didStartUpComplete = false;
     public string recordingPath;
 
@@ -175,8 +179,9 @@ public class RenderManager : MonoBehaviour
                 
             case RenderMethod.RenderUser:
                 IsLastUserIndex = false;
-                List<int> userIndicies = GetUserSOFAIndices();
+                List<int> userIndicies = GetUserSOFAIndices(selectedUserIndex);
                 SteamAudioManager.Singleton.currentHRTF = userIndicies[0];
+                nearFieldSource.audioSource.Play();
                 break;
 
             default: break;
@@ -209,9 +214,10 @@ public class RenderManager : MonoBehaviour
                 break;
 
             case RenderMethod.RenderUser:
-                List<int> userIndicies = GetUserSOFAIndices();
+                List<int> userIndicies = GetUserSOFAIndices(selectedUserIndex);
                 SteamAudioManager.Singleton.currentHRTF = userIndicies[1];
                 IsLastUserIndex = true;
+                nearFieldSource.audioSource.Play();
                 break;
 
             default: break;
@@ -492,11 +498,6 @@ public class RenderManager : MonoBehaviour
         didStartUpComplete = !didStartUpComplete;
     }
 
-    public void SetAmountOfRooms(int amount)
-    {
-        amountOfRooms = amount;
-    }
-
     private void SetRecordingPath(RenderMethod renderMethod)
     {
         if (renderMethod == RenderMethod.RenderRooms)
@@ -505,7 +506,7 @@ public class RenderManager : MonoBehaviour
         }
         else if (renderMethod == RenderMethod.RenderUser)
         {
-            recordingPath = SelectedRoomPath + "/user/";
+            recordingPath = SelectedRoomPath + "/user" + selectedUserIndex.ToString() + "/";
         }
         else 
         {
@@ -554,7 +555,8 @@ public class RenderManager : MonoBehaviour
             System.IO.Directory.CreateDirectory(SelectedRenderPath);
         }
         
-        string userPath = SelectedRoomPath + "/user/";
+        selectedUserIndex = Calculator.RandomiseIndex();
+        string userPath = SelectedRoomPath + "/user" + selectedUserIndex.ToString() + "/";
         System.IO.Directory.CreateDirectory(userPath);
 
         SelectedRenderPath = SelectedRoomPath + "/" + "inroom0" + "/";
@@ -607,13 +609,13 @@ public class RenderManager : MonoBehaviour
         receiver.transform.position = newPosition;
     }
 
-    public List<int> GetUserSOFAIndices()
+    public List<int> GetUserSOFAIndices(int index)
     {
         List<int> indices = new();
 
         for (int i = 0; i < SOFACount; i++)
         {
-            if (SOFANames[i].Contains("config_0"))
+            if (SOFANames[i].Contains("config_" + index.ToString()))
             {
                 indices.Add(i);
             }

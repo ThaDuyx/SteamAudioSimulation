@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -56,9 +57,10 @@ public class SimulationView : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.P))
         {
-            List<int> indices = RenderManager.Instance.GetUserSOFAIndices();
+            List<int> indices = RenderManager.Instance.GetUserSOFAIndices(Calculator.RandomiseIndex());
 
             indices.ForEach(index => Debug.Log(index));
+
         }
     }
 
@@ -138,6 +140,7 @@ public class SimulationView : MonoBehaviour
                         else if (RenderManager.Instance.IsLastRoom)
                         {
                             chosenMethod = RenderMethod.RenderUser;
+                            RenderManager.Instance.SetRenderMethod(renderMethod: chosenMethod);
 
                             ToggleRender();
                         }
@@ -397,7 +400,7 @@ public class SimulationView : MonoBehaviour
     {
         if (int.TryParse(input, out int amountOfRooms) && amountOfRooms < 20)
         {
-            RenderManager.Instance.SetAmountOfRooms(amount: amountOfRooms);
+            // TODO: Enter amount of rooms added in for rendering
         }
         else
         {

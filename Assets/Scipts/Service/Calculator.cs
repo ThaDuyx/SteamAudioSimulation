@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 struct Calculator
@@ -81,5 +82,12 @@ struct Calculator
         Vector3 newPosition = new(randomX, randomY, randomZ);
 
         return newPosition;
+    }
+
+    public static int RandomiseIndex()
+    {
+        int randomIndex = UnityEngine.Random.Range(0, 11);
+        
+        return randomIndex; 
     }
 }

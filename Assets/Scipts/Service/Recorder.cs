@@ -35,9 +35,17 @@ public class Recorder
     public void StartRecording() 
     {
         string sofaFile = RenderManager.Instance.ActiveSOFAName;
-        string micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "").Insert(1, "_");
+        string micPairIndicator;
+        if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderUser)
+        {
+            micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "")[1..].Insert(1, "_");
+        } 
+        else
+        {
+            micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "").Insert(1, "_");
+        }
+        
         string concatenatedString = "mic_" + micPairIndicator;
-
         fileName = Path.GetFileNameWithoutExtension(concatenatedString) + ".wav";
 
         if (!_isRecording)
