@@ -1,4 +1,5 @@
 using System.Collections;
+using SteamAudio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,6 +12,8 @@ public class RoomManager : MonoBehaviour
     public static event SceneUnloadedAction OnSceneUnloaded;
 
     public int SceneCounter { get { return SceneManager.sceneCountInBuildSettings; } }
+
+    public SteamAudioMaterial Material { get { return Resources.Load<SteamAudioMaterial>("Materials/Concrete"); } }
     
     // The reason why a specific index is entered in .GetSceneAt(int index) is because we know there is only going to be our active canvas scene
     // and the selected room scene which will be placed at the second index (namely 1).

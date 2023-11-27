@@ -8,6 +8,9 @@ public class Timer : MonoBehaviour
     private float duration;
     private float simulationDuration;
 
+    public delegate void TimerEndedAction();
+    public static event TimerEndedAction OnTimerEnded;
+
     public void Begin(float duration, RenderMethod method)
     {
         this.duration = duration;
@@ -37,6 +40,8 @@ public class Timer : MonoBehaviour
         }
         
         _isActive = false;
+
+        OnTimerEnded.Invoke();
     }
 
     public bool IsActive()
@@ -60,6 +65,7 @@ public class Timer : MonoBehaviour
         {
             RenderMethod.AllAtOnce => RenderManager.Instance.SOFACount * duration,
             RenderMethod.OneByOne => RenderManager.Instance.SpeakerCount * RenderManager.Instance.SimulationLength,
+            RenderMethod.RenderRooms => 2 * duration,
             _ => 0.0f,
         };
     }
