@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class SimulationView : MonoBehaviour
+public class RenderView : MonoBehaviour, IRenderObserver
 {
     [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
     [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown, roomFolderDropdown, renderFolderDropdown;
@@ -15,11 +13,9 @@ public class SimulationView : MonoBehaviour
     [SerializeField] private Toggle applyReflToHRTFToggle, distAttenuationToggle, airAbsorptionToggle;
     [SerializeField] private TMP_InputField roomsInputField; 
     [SerializeField] private Button addRoomFolderButton, deleteRoomFolderButton, addRenderFolderButton, deleteRenderFolderButton, defaultLocationButton, locationRandomiserButton;
-    
-    private RenderMethod chosenMethod = RenderMethod.OneByOne;
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
-    private void Start()
+    void Start()
     {
         SetContent();
 
@@ -33,13 +29,18 @@ public class SimulationView : MonoBehaviour
         
         HandleRender();
     }
+    
+    public void OnNotify()
+    {
+        SetUI();
+    }
 
     // Method for handling whenever specific keys are pressed on the keyboard.
     private void HandleKeyStrokes()
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            if (chosenMethod == RenderMethod.RenderRooms)
+            if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderRooms)
             {
                 RenderManager.Instance.SetDefaultLocation();
                 RenderManager.Instance.CreateNewRoomFolder();
@@ -54,14 +55,6 @@ public class SimulationView : MonoBehaviour
         {
             RenderManager.Instance.ToggleAudio();
         }
-
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            List<int> indices = RenderManager.Instance.GetUserSOFAIndices(Calculator.RandomiseIndex());
-
-            indices.ForEach(index => Debug.Log(index));
-
-        }
     }
 
     // Either starts or stops the simulation dependent on which state currently is active.
@@ -69,11 +62,12 @@ public class SimulationView : MonoBehaviour
     {
         if (RenderManager.Instance.IsRendering)
         {
-            RenderManager.Instance.StopRender(renderMethod: chosenMethod);
+            RenderManager.Instance.StopRender();
         }
         else
         {
-            RenderManager.Instance.StartRender(renderMethod: chosenMethod, sofaIndex: sofaFileDropdown.value);
+            RenderManager.Instance.StartRender(sofaIndex: sofaFileDropdown.value);
+            RenderManager.Instance.Callback();
         }
     }
 
@@ -86,109 +80,12 @@ public class SimulationView : MonoBehaviour
             timerText.text = "Time left: " + RenderManager.Instance.TimeLeft + "s";
             simulationDurationText.text = "Time left: " + RenderManager.Instance.TimeLeftOfRender + "s";
         }
-        else
-        {
-            HandleRenderMethod();
-        }
-    }
-
-    private void HandleRenderMethod()
-    {
-        switch (chosenMethod)
-            {
-                case RenderMethod.AllAtOnce:
-                {
-                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
-                    {
-                        RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
-                        
-                        SetUI();
-                    }
-                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA)
-                    {
-                        RenderManager.Instance.StopRender(renderMethod: chosenMethod);
-
-                        SetUI();
-                    }
-                    break;
-                }
-
-                case RenderMethod.RenderRooms:
-                {
-                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSOFA)
-                    {
-                        RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
-
-                        SetUI();
-                    }
-                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSOFA)
-                    {
-                        RenderManager.Instance.StopRender(renderMethod: chosenMethod);
-
-                        SetUI();
-
-                        if (!RenderManager.Instance.IsLastRoom)
-                        {
-                            RenderManager.Instance.UpdateSelectedSpeaker();
-                            RenderManager.Instance.UpdateRenderPath();
-                            RenderManager.Instance.GoToDefaultLocation();
-                            
-                            ToggleRender();
-
-                            SetUI();
-                        }
-                        else if (RenderManager.Instance.IsLastRoom)
-                        {
-                            chosenMethod = RenderMethod.RenderUser;
-                            RenderManager.Instance.SetRenderMethod(renderMethod: chosenMethod);
-
-                            ToggleRender();
-                        }
-                    }
-                    break;
-                }
-
-                case RenderMethod.RenderUser:
-                {
-                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastUserIndex)
-                    {
-                        RenderManager.Instance.ContinueRender(renderMethod: RenderMethod.RenderUser);
-
-                        SetUI();
-                    } 
-                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastUserIndex)
-                    {
-                        RenderManager.Instance.StopRender(renderMethod: RenderMethod.RenderUser);
-                        
-                        SetUI();
-                    }
-
-                    break;
-                }
-
-                case RenderMethod.OneByOne:
-                {
-                    if (RenderManager.Instance.IsRendering && !RenderManager.Instance.IsLastSpeaker) 
-                    {
-                        RenderManager.Instance.ContinueRender(renderMethod: chosenMethod);
-                        
-                        SetUI();
-                    }
-                    else if (RenderManager.Instance.IsRendering && RenderManager.Instance.IsLastSpeaker)
-                    {
-                        RenderManager.Instance.StopRender(renderMethod: chosenMethod);
-
-                        SetUI();
-                    }
-                    break;
-                }
-
-                default: break;
-            }
     }
 
     private void SetContent()
     {
+        RenderManager.Instance.AddObserver(this);
+
         // feed dropdowns with data
         speakerDropdown.options.Clear();
         foreach (string speakerName in RenderManager.Instance.GetSpeakerNames())
@@ -392,7 +289,6 @@ public class SimulationView : MonoBehaviour
 
     public void RenderMethodDropDownChanged(int index)
     {
-        chosenMethod = (RenderMethod)index;
         RenderManager.Instance.SetRenderMethod(renderMethod: (RenderMethod)index);
     }
 

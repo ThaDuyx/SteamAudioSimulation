@@ -12692,7 +12692,7 @@ GameObject:
   - component: {fileID: 1285117421}
   - component: {fileID: 1285117422}
   m_Layer: 0
-  m_Name: SimulationView
+  m_Name: RenderView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
