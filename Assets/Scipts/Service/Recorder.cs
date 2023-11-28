@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using SteamAudio;
 using UnityEngine;
 
 // Reference: http://abolfazltanha.com/Source-codes-92045/
@@ -34,7 +35,7 @@ public class Recorder
 
     public void StartRecording() 
     {
-        string sofaFile = RenderManager.Instance.ActiveSOFAName;
+        string sofaFile = SteamAudioManager.Singleton.ActiveSOFAName();
         string micPairIndicator;
         if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderUser)
         {
@@ -67,7 +68,7 @@ public class Recorder
 
     private void StartWriting(string name) 
     {
-        fileStream = new FileStream(RenderManager.Instance.recordingPath + fileName, FileMode.Create);
+        fileStream = new FileStream(RenderManager.Instance.dataVM.recordingPath + fileName, FileMode.Create);
         
         // fileStream = new FileStream("/Users/duyx/Code/Jabra/python/renders/" + fileName, FileMode.Create);
         // fileStream = new FileStream(Application.persistentDataPath + "/" + fileName, FileMode.Create);

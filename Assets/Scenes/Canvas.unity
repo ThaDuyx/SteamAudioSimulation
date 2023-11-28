@@ -12734,8 +12734,6 @@ MonoBehaviour:
   renderMethodDropdown: {fileID: 1155128853}
   roomDropdown: {fileID: 404939812}
   sofaFileDropdown: {fileID: 2111662419}
-  roomFolderDropdown: {fileID: 300614488}
-  renderFolderDropdown: {fileID: 814703553}
   bounceSlider: {fileID: 1217918110}
   volumeSlider: {fileID: 604408517}
   directMixLevelSlider: {fileID: 1875997635}
@@ -12748,10 +12746,6 @@ MonoBehaviour:
   distAttenuationToggle: {fileID: 0}
   airAbsorptionToggle: {fileID: 0}
   roomsInputField: {fileID: 0}
-  addRoomFolderButton: {fileID: 1450613512}
-  deleteRoomFolderButton: {fileID: 39577212}
-  addRenderFolderButton: {fileID: 979696420}
-  deleteRenderFolderButton: {fileID: 844816054}
   defaultLocationButton: {fileID: 471443010}
   locationRandomiserButton: {fileID: 899676181}
 --- !u!1 &1297032122
@@ -18439,7 +18433,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1920105378
 RectTransform:
   m_ObjectHideFlags: 0

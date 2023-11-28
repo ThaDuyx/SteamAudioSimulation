@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using SteamAudio;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -7,12 +10,12 @@ using UnityEngine.UI;
 public class RenderView : MonoBehaviour, IRenderObserver
 {
     [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
-    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown, roomFolderDropdown, renderFolderDropdown;
+    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown;
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle, distAttenuationToggle, airAbsorptionToggle;
     [SerializeField] private TMP_InputField roomsInputField; 
-    [SerializeField] private Button addRoomFolderButton, deleteRoomFolderButton, addRenderFolderButton, deleteRenderFolderButton, defaultLocationButton, locationRandomiserButton;
+    [SerializeField] private Button defaultLocationButton, locationRandomiserButton;
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     void Start()
@@ -40,35 +43,26 @@ public class RenderView : MonoBehaviour, IRenderObserver
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderRooms)
-            {
-                RenderManager.Instance.SetDefaultLocation();
-                RenderManager.Instance.CreateNewRoomFolder();
-            }
-
-            ToggleRender();
+            ExcecuteRender();
 
             SetUI();
         }
 
         if (Input.GetKeyDown(KeyCode.O))
         {
-            RenderManager.Instance.ToggleAudio();
+            RenderManager.Instance.sourceVM.ToggleAudio();
         }
     }
 
     // Either starts or stops the simulation dependent on which state currently is active.
-    private void ToggleRender()
+    private void ExcecuteRender()
     {
-        if (RenderManager.Instance.IsRendering)
-        {
-            RenderManager.Instance.StopRender();
+        if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderRooms)
+        {   
+            RenderManager.Instance.SetupRender();
         }
-        else
-        {
-            RenderManager.Instance.StartRender(sofaIndex: sofaFileDropdown.value);
-            RenderManager.Instance.Callback();
-        }
+        
+        RenderManager.Instance.ToggleRender();
     }
 
     // Called in the Update() MonoBehavior method
@@ -88,7 +82,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
         // feed dropdowns with data
         speakerDropdown.options.Clear();
-        foreach (string speakerName in RenderManager.Instance.GetSpeakerNames())
+        foreach (string speakerName in RenderManager.Instance.sourceVM.GetSpeakerNames())
         {
             speakerDropdown.options.Add(new TMP_Dropdown.OptionData() { text = speakerName });
         }
@@ -100,6 +94,14 @@ public class RenderView : MonoBehaviour, IRenderObserver
         {
             audioClipDropdown.options.Add(new TMP_Dropdown.OptionData() { text = audioClip });
         }
+        
+        audioClipDropdown.options.ForEach(option => 
+        {
+            if (RenderManager.Instance.sourceVM.AudioClipIsTheSame(option.text))
+            {
+                audioClipDropdown.value = audioClipDropdown.options.IndexOf(option);
+            } 
+        });
 
         roomDropdown.options.Clear();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
@@ -129,33 +131,11 @@ public class RenderView : MonoBehaviour, IRenderObserver
         renderMethodDropdown.RefreshShownValue();
 
         sofaFileDropdown.options.Clear();
-        foreach (string sofaFile in RenderManager.Instance.SOFANames)
+        foreach (string sofaFile in SteamAudioManager.Singleton.hrtfNames)
         {
             sofaFileDropdown.options.Add(new TMP_Dropdown.OptionData() { text = sofaFile});
         }
         sofaFileDropdown.RefreshShownValue();
-
-        LoadRoomFolderDropdownData();
-        roomFolderDropdown.options.ForEach((option) => 
-        {        
-            if (Paths.roomsPath + option.text + "/" == RenderManager.Instance.SelectedRoomPath)
-            {
-                int index = roomFolderDropdown.options.IndexOf(option);
-                roomFolderDropdown.value = index;
-            }
-        });
-        roomFolderDropdown.RefreshShownValue();
-
-        LoadRenderFolderDropdownData();
-        renderFolderDropdown.options.ForEach((option) => 
-        {
-            if (RenderManager.Instance.SelectedRoomPath + option.text + "/" == RenderManager.Instance.SelectedRenderPath)
-            {
-                int index = renderFolderDropdown.options.IndexOf(option);
-                renderFolderDropdown.value = index;
-            }
-        });
-        renderFolderDropdown.RefreshShownValue();
 
         RenderManager.Instance.ToggleStartUp();
     }
@@ -167,23 +147,23 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
         simulationDurationText.text = "Idle state";
 
-        currentSOFAText.text = RenderManager.Instance.ActiveSOFAName;
+        currentSOFAText.text = SteamAudioManager.Singleton.ActiveSOFAName();
 
-        sampleRateText.text = "fs: " + AudioSettings.outputSampleRate.ToString();
+        sampleRateText.text = "fs: " + UnityEngine.AudioSettings.outputSampleRate.ToString();
 
-        bounceSlider.value = RenderManager.Instance.RealTimeBounces;
+        bounceSlider.value = RenderManager.Instance.sourceVM.RealTimeBounces;
         bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
 
-        volumeSlider.value = RenderManager.Instance.Volume;
+        volumeSlider.value = RenderManager.Instance.sourceVM.Volume;
         volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
 
-        directMixLevelSlider.value = RenderManager.Instance.DirectMixLevel;
+        directMixLevelSlider.value = RenderManager.Instance.sourceVM.DirectMixLevel;
         directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
 
-        reflectionMixLevelSlider.value = RenderManager.Instance.ReflectionMixLevel;
+        reflectionMixLevelSlider.value = RenderManager.Instance.sourceVM.ReflectionMixLevel;
         reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
 
-        applyReflToHRTFToggle.isOn = RenderManager.Instance.ApplyHRTFToReflections;
+        applyReflToHRTFToggle.isOn = RenderManager.Instance.sourceVM.ApplyHRTFToReflections;
 
         audioClipDropdown.value = GetAudioClipIndex();
         audioClipDropdown.RefreshShownValue();
@@ -200,14 +180,14 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
     public void SpeakerDropdownChanged(int index)
     {
-        RenderManager.Instance.SetSelectedSpeaker(index);
+        RenderManager.Instance.sourceVM.SetSelectedSpeaker(index);
         SetUI();
     }
 
     public void AudioClipDropdownChanged(int index)
     {
-        RenderManager.Instance.AudioClip = audioClipDropdown.options[index].text;
-        RenderManager.Instance.PersistRoom();
+        RenderManager.Instance.sourceVM.AudioClip = audioClipDropdown.options[index].text;
+        RenderManager.Instance.sourceVM.PersistRoom();
     }
 
     public void SOFAFileDropdownChanged(int index)
@@ -217,7 +197,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
     
     public void HRTFToggleChanged(bool isOn)
     {
-        RenderManager.Instance.ApplyHRTFToReflections = isOn;
+        RenderManager.Instance.sourceVM.ApplyHRTFToReflections = isOn;
     }
 
     public void BounceSliderChanged(float value)
@@ -227,7 +207,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
     }
     public void BounceSliderEndDrag()
     {
-        RenderManager.Instance.RealTimeBounces = (int)bounceSlider.value;
+        RenderManager.Instance.sourceVM.RealTimeBounces = (int)bounceSlider.value;
         RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: RoomManager.Instance.ActiveSceneIndex);
     }
     
@@ -238,19 +218,19 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
     public void VolumeSliderChanged(float value)
     {
-        RenderManager.Instance.Volume = value;
+        RenderManager.Instance.sourceVM.Volume = value;
         volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
     }
 
     public void DirectMixLevelSliderChanged(float value)
     {
-        RenderManager.Instance.DirectMixLevel = value;
+        RenderManager.Instance.sourceVM.DirectMixLevel = value;
         directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
     }
 
     public void ReflectionMixLevelSliderChanged(float value)
     {
-        RenderManager.Instance.ReflectionMixLevel = value;
+        RenderManager.Instance.sourceVM.ReflectionMixLevel = value;
         reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
     }
     
@@ -277,14 +257,14 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
     public void DistanceAttenuationToggleChanged(bool isOn) 
     {
-        RenderManager.Instance.DistanceAttenuation = isOn;
-        RenderManager.Instance.PersistRoom();
+        RenderManager.Instance.sourceVM.DistanceAttenuation = isOn;
+        RenderManager.Instance.sourceVM.PersistRoom();
     }
 
     public void AirAbsorptionToggleChanged(bool isOn)
     {
-        RenderManager.Instance.AirAbsorption = isOn;
-        RenderManager.Instance.PersistRoom();
+        RenderManager.Instance.sourceVM.AirAbsorption = isOn;
+        RenderManager.Instance.sourceVM.PersistRoom();
     }
 
     public void RenderMethodDropDownChanged(int index)
@@ -313,20 +293,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
         RoomManager.OnSceneUnloaded += HandleSceneUnloaded;
     }
 
-    public void RoomFolderDropdownChanged(int index)
-    {
-        RenderManager.Instance.SetRoomPath(index: index);
-        
-        LoadRenderFolderDropdownData();
-        renderFolderDropdown.RefreshShownValue();
-    }
-
-    public void RenderFolderDropdownChanged(int index)
-    {
-        // TODO: Change the render folder of interest
-        RenderManager.Instance.SetRenderPath(index: index);
-    }
-
+    // callback function used to wait while managers are loading whenever we change scene
     private void HandleSceneUnloaded()
     {
         speakerDropdown.value = 0;
@@ -336,36 +303,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
     public void SliderEndDrag()
     {
-        RenderManager.Instance.PersistRoom();
-    }
-
-    public void AddRoomFolderButtonPressed()
-    {
-        RenderManager.Instance.CreateNewRoomFolder();
-        LoadRoomFolderDropdownData();
-        roomFolderDropdown.value = roomFolderDropdown.options.Count - 1;
-        renderFolderDropdown.ClearOptions();
-    }
-
-    public void DeleteRoomFolderButtonPressed()
-    {
-        RenderManager.Instance.DeleteRoomFolder();
-        LoadRoomFolderDropdownData();
-        roomFolderDropdown.value = roomFolderDropdown.options.Count - 1;
-    }
-
-    public void AddRenderFolderButtonPressed()
-    {
-        RenderManager.Instance.CreateNewRenderFolder();
-        LoadRenderFolderDropdownData();
-        renderFolderDropdown.value = renderFolderDropdown.options.Count - 1;
-    }
-
-    public void DeleteRenderFolderButtonPressed()
-    {
-        RenderManager.Instance.DeleteRenderFolder();
-        LoadRenderFolderDropdownData();
-        renderFolderDropdown.value = renderFolderDropdown.options.Count - 1;
+        RenderManager.Instance.sourceVM.PersistRoom();
     }
 
     // Used for retrieving the index from the selected audio clip
@@ -373,54 +311,13 @@ public class RenderView : MonoBehaviour, IRenderObserver
     {
         for (int i = 0; i < audioClipDropdown.options.Count; i++)
         {
-            if (audioClipDropdown.options[i].text == RenderManager.Instance.AudioClip + ".wav"
-            || audioClipDropdown.options[i].text == RenderManager.Instance.AudioClip + ".mp3")
+            if (audioClipDropdown.options[i].text == RenderManager.Instance.sourceVM.AudioClip + ".wav"
+            || audioClipDropdown.options[i].text == RenderManager.Instance.sourceVM.AudioClip + ".mp3")
             {
                 return i;
             }
         }
 
         return 0;
-    }
-
-    private void LoadRoomFolderDropdownData()
-    {
-        roomFolderDropdown.options.Clear();
-        foreach (string directory in RenderManager.Instance.Directories)
-        {
-            int pathLength = Paths.roomsPath.Length;
-            string modifiedString = directory[pathLength..];
-            roomFolderDropdown.options.Add(new TMP_Dropdown.OptionData() { text = modifiedString });
-        }
-    }
-
-    private void LoadRenderFolderDropdownData()
-    {
-        if (RenderManager.Instance.RenderPaths.Length != 0)
-        {
-            renderFolderDropdown.options.Clear();
-            foreach (string renderFolder in RenderManager.Instance.RenderPaths)
-            {
-                int pathLength = RenderManager.Instance.SelectedRoomPath.Length;
-                string modifiedString = renderFolder[pathLength..];
-                renderFolderDropdown.options.Add(new TMP_Dropdown.OptionData() { text = modifiedString });
-            }
-        }
-        else 
-        {
-            renderFolderDropdown.options.Clear();
-        }
-        
-        renderFolderDropdown.RefreshShownValue();
-    }
-
-    public void DefaultLocationPressed()
-    {
-        RenderManager.Instance.GoToDefaultLocation();
-    }
-
-    public void LocationRandomiserPressed()
-    {
-        RenderManager.Instance.RandomiseLocation();
     }
 }

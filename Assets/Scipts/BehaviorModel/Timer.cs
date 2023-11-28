@@ -1,4 +1,5 @@
 using System.Collections;
+using SteamAudio;
 using UnityEngine;
 
 public class Timer : MonoBehaviour
@@ -63,9 +64,9 @@ public class Timer : MonoBehaviour
     {
         return method switch
         {
-            RenderMethod.AllAtOnce => RenderManager.Instance.SOFACount * duration,
-            RenderMethod.OneByOne => RenderManager.Instance.SpeakerCount * RenderManager.Instance.SimulationLength,
+            RenderMethod.AllAtOnce => SteamAudioManager.Singleton.SOFACount() * duration,
             RenderMethod.RenderRooms => 2 * duration,
+            RenderMethod.RenderUser => 2 * duration,
             _ => 0.0f,
         };
     }
