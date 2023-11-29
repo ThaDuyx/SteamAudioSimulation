@@ -39,17 +39,17 @@ struct Logger
         writer.WriteLine($"Scattering : { RoomManager.Instance.Material.scattering }");
         // ------
         
-        writer.WriteLine($"\nSample rate : { RenderManager.Instance.SampleRate } Hz" );
+        writer.WriteLine($"\nSample rate : { UnityEngine.AudioSettings.outputSampleRate } Hz" );
     }
 
     private static void WriteSpeakerInfo(StreamWriter writer, Speaker speakerInfo)
     {
-        writer.WriteLine($"\nName : { speakerInfo.Name }");
+        writer.WriteLine($"\nName : { speakerInfo.name }");
         writer.WriteLine($"        Audio Clip : { speakerInfo.audioSource.clip.name }");
         writer.WriteLine($"    Geometry : ");
-        writer.WriteLine($"        Distance To Receiver : { speakerInfo.DistanceToReceiver } units");
-        writer.WriteLine($"        Azimuth angle : { speakerInfo.Azimuth }");
-        writer.WriteLine($"        Elevation angle : { speakerInfo.Elevation }");
+        writer.WriteLine($"        Distance To Receiver : { speakerInfo.distanceToReceiver } units");
+        writer.WriteLine($"        Azimuth angle : { speakerInfo.azimuth }");
+        writer.WriteLine($"        Elevation angle : { speakerInfo.elevation }");
         
         writer.WriteLine($"\n    Parameters : ");
         writer.WriteLine($"        Real Time Bounces : { SteamAudioSettings.Singleton.realTimeBounces }");

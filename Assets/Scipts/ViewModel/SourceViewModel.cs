@@ -5,15 +5,23 @@ using SteamAudio;
 public class SourceViewModel
 {
     public List<Speaker> speakers;
+    public Speaker Speaker { get { return speakers[selectedSpeaker]; }}
     public Speaker nearFieldSource;
-    private Room room;
-    private int activeSpeaker = 0, selectedSpeaker = 0;
+    public AudioListener receiver;
+    private readonly Room room;
+    private int selectedSpeaker = 0;
     private bool isAllSpeakersSelected;
+
+    public int AmountOfSpeakers { get { return speakers.Count ;}}
+    public int SpeakerCount { get { return speakers.Count; }}
+    public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
+    public string GetSelectorIndex() { return selectedSpeaker.ToString(); }
     
-    public SourceViewModel(List<Speaker> speakers, Speaker nearFieldSource)
+    public SourceViewModel(List<Speaker> speakers, Speaker nearFieldSource, AudioListener receiver)
     {
         this.speakers = speakers;
         this.nearFieldSource = nearFieldSource;
+        this.receiver = receiver;
 
         // Try to load a persisted room or else fetch a default one.
         room = DataManager.Instance.LoadRoomData(amountOfSpeakers: speakers.Count);
@@ -29,14 +37,6 @@ public class SourceViewModel
             speakers[i].steamAudioSource.airAbsorption = room.sources[i].airAbsorption == 1;
         }
     }
-
-    public Speaker Speaker { get { return speakers[selectedSpeaker]; }}
-    public int AmountOfSpeakers { get { return speakers.Count ;}}
-    public int SpeakerCount { get { return speakers.Count; }}
-    public bool IsLastRoom { get { return selectedSpeaker + 1 == speakers.Count; }}
-    public string ActiveSpeakerName { get { return speakers[activeSpeaker].Name; }}
-    public bool IsLastSpeaker { get { return activeSpeaker == speakers.Count - 1; }}
-    public string GetSelectorIndex() { return selectedSpeaker.ToString(); }
     
     public int RealTimeBounces
     {
@@ -167,15 +167,11 @@ public class SourceViewModel
         room.sources[index].airAbsorption = AirAbsorption ? 1 : 0;
         room.sources[index].distanceAttenuation = DistanceAttenuation ? 1 : 0;
     }
-    
-    public string[] GetSpeakerNames()
-    {
-        string[] names = new string[speakers.Count];
 
-        for (int i = 0; i < speakers.Count; i++)
-        {
-            names[i] = speakers[i].Name;
-        }
+    public List<string> GetSpeakerNames()
+    {
+        List<string> names = new();
+        speakers.ForEach(speaker => names.Add(speaker.name));
         
         return names;
     }
@@ -205,16 +201,6 @@ public class SourceViewModel
         selectedSpeaker++;   
     }
 
-    public void SelectNextSpeaker()
-    {
-        activeSpeaker++;
-    }
-
-    public void PlayActiveSpeaker()
-    {
-        speakers[activeSpeaker].audioSource.Play();
-    }
-
     public void ToggleAudio()
     {
         if (speakers[selectedSpeaker].audioSource.isPlaying)
@@ -237,7 +223,7 @@ public class SourceViewModel
         speakers[selectedSpeaker].audioSource.Stop();
     }
 
-    public bool AudioClipIsTheSame(string audioClip)
+    public bool AudioClipIsTheSameAs(string audioClip)
     {
         if (audioClip == AudioClip + ".wav" || audioClip == AudioClip + ".mp3")
         {
@@ -245,5 +231,21 @@ public class SourceViewModel
         }
 
         return false;
+    }
+
+    public void CalculateGeometry()
+    {
+        Speaker.distanceToReceiver = Calculator.CalculateDistanceToReceiver(receiver.transform, Speaker.audioSource.transform);
+        Speaker.azimuth = Calculator.CalculateAzimuth(receiver.transform, Speaker.audioSource.transform);
+        Speaker.elevation = Calculator.CalculateElevation(receiver.transform, Speaker.audioSource.transform);
+    }
+
+    public void SetDefaulPosition()
+    {
+        receiver.transform.localPosition = Dimensions.defaultLocation;
+    }
+    public void RandomisePosition()
+    {
+        receiver.transform.localPosition = Calculator.CalculateNewPosition();
     }
 }

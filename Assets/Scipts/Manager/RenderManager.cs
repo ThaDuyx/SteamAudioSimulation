@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using SteamAudio;
 using UnityEngine;
 
 public enum RenderMethod
 {
-   AllAtOnce,       // Render all sources together in a room with every individual SOFA files
    RenderRooms,     // Render all sources together in a room with every individual SOFA files, and different parameters
    RenderUser       // Render the near field audio source
 }
@@ -17,23 +15,18 @@ public class RenderManager : MonoBehaviour
     
     public SourceViewModel sourceVM;
     public DataViewModel dataVM;
-    private AudioListener receiver;
     private Recorder recorder;
     private Timer timer;
     public RenderMethod SelectedRenderMethod { get; private set; }
 
-    public int SampleRate { get { return UnityEngine.AudioSettings.outputSampleRate; } }
     public bool IsRendering { get; private set; }
-    public float SimulationLength { get { return 6.0f; } private set { SimulationLength = value; } }
-    public bool IsTiming { get { return timer.IsActive(); } }
-    public string TimeLeft { get { return timer.GetTimeLeft().ToString(); } }                                   
-    public string TimeLeftOfRender { get { return timer.GetTimeLeftOfSimulation().ToString(); } }
+    public float RenderDuration { get { return 6.0f; } private set { RenderDuration = value; } }
+    public bool IsTiming { get { return timer.IsActive; } }
+    public string CurrentTimeLeft { get { return timer.CurrentTime; } }                                   
+    public string TotalTimeLeft { get { return timer.TotalTime; } }
     public string SelectorIndex { get { return sourceVM.GetSelectorIndex(); }}
     public bool IsLastUserIndex = false;
-
-    // Integer used for tracking which speaker should play during the OneByOne render method & for selecting speakers and configuring their parameters
-    private readonly int selectedUserIndex = 0;
-    public bool didStartUpComplete = false;
+    private int renderCounter = 0;
 
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
@@ -47,35 +40,38 @@ public class RenderManager : MonoBehaviour
             Instance = this; 
         }
 
-        SetContent(); // initialise at the Awake lifecycle in order to have it ready for the view to read
-    }
-
-    // Basic Unity MonoBehaviour method - Essentially a start-up function / Constructor of the class
-    void Start()
-    {
-        recorder = new Recorder(outputSampleRate: SampleRate);
-        timer = gameObject.AddComponent<Timer>();
-        dataVM = new();
-        SelectedRenderMethod = (RenderMethod)Enum.Parse(typeof(RenderMethod), SettingsManager.Instance.settings.selectedRenderMethod);
+        SetContent();
     }
 
     private void SetContent()
     {
-        // find Receiver in scene
-        receiver = FindObjectOfType<AudioListener>();
+        // create behavior services
+        recorder = new Recorder(outputSampleRate: UnityEngine.AudioSettings.outputSampleRate);
+        timer = gameObject.AddComponent<Timer>();
+
+        // find and save default location of our receiver in scene
+        AudioListener receiver = FindObjectOfType<AudioListener>();
         Dimensions.defaultLocation = receiver.transform.localPosition;
         
-        // initialising speaker list & near field object
+        // initialise speaker list & near field object
         List<Speaker> farFieldSpeakers = FindFarFieldSpeakers();
         Speaker nearFieldSpeaker = FindNearFieldSpeaker();
-        sourceVM = new(speakers: farFieldSpeakers, nearFieldSource: nearFieldSpeaker);
+        
+        // construct view models 
+        sourceVM = new(speakers: farFieldSpeakers, nearFieldSource: nearFieldSpeaker, receiver: receiver);
+        dataVM = new();
+        
+        // fetch the previously selected render method on start up
+        SelectedRenderMethod = (RenderMethod)Enum.Parse(typeof(RenderMethod), SettingsManager.Instance.settings.selectedRenderMethod);
 
+        // create folder if they don't exist
         Paths.SetupDirectories();
     }
 
-    public void Callback()
+    // callback 
+    public void HandleTimerEnd()
     {
-        Timer.OnTimerEnded += HandleTimerCallback;
+        Timer.OnTimerEnded += HandleRender;
     }
 
     // - Render Methods
@@ -83,7 +79,8 @@ public class RenderManager : MonoBehaviour
     {
         if (SelectedRenderMethod == RenderMethod.RenderRooms)
         {   
-            dataVM.CreateNewRoomFolder();
+            dataVM.CreateDirectories();
+            // dataVM.CreateRootRenderFolder();
         }   
     }
 
@@ -96,7 +93,7 @@ public class RenderManager : MonoBehaviour
         else
         {
             StartRender();
-            Callback();
+            HandleTimerEnd();
         }
     }
     
@@ -104,21 +101,22 @@ public class RenderManager : MonoBehaviour
     public void StartRender()
     {
         IsRendering = true;
-        dataVM.SetRecordingPath(renderMethod: SelectedRenderMethod);             // updates the output for recordings
+        // dataVM.CreateFarFieldRenderFolder(renderCounter);
+        dataVM.SetRecordingPath(renderMethod: SelectedRenderMethod);
 
         switch(SelectedRenderMethod)
         {
             case RenderMethod.RenderRooms:
-                receiver.transform.localPosition = Calculator.CalculateNewPosition(); 
-                UpdateSOFA();                                                    // increments array of SOFA files to our
-                sourceVM.PlayAudio();                                            // play the first speaker
+                sourceVM.RandomisePosition();
+                SteamAudioManager.Singleton.currentHRTF++;
+                sourceVM.PlayAudio();
                 break;
                 
             case RenderMethod.RenderUser:
                 IsLastUserIndex = false;                                    
                 // fetch indices of config sofa files that match the randomly chosen user index
-                List<int> userIndicies = SteamAudioManager.Singleton.GetUserSOFAIndices(selectedUserIndex);  
-                SteamAudioManager.Singleton.currentHRTF = userIndicies[0];       // select the first config of the near field sofa files
+                List<int> userIndicies = dataVM.FetchUserSOFAIndicies();  
+                SteamAudioManager.Singleton.currentHRTF = userIndicies[0];
                 sourceVM.nearFieldSource.audioSource.Play();
                 break;
 
@@ -126,35 +124,33 @@ public class RenderManager : MonoBehaviour
         }
 
         recorder.ToggleRecording();
-        timer.Begin(SimulationLength, SelectedRenderMethod);  
+        timer.Begin(RenderDuration);  
     }
 
     // Updates the state to continue rendering with the next HRTF in the list
     public void ContinueRender()
     {
-        recorder.ToggleRecording();                                                 // stop previous recording
-
+        recorder.ToggleRecording();                                                 
         switch(SelectedRenderMethod)
         {
             case RenderMethod.RenderRooms:
-                UpdateSOFA();                                                       // moves to next HRTF
-                sourceVM.PlayAudio();                                               // play
+                SteamAudioManager.Singleton.currentHRTF++;
+                sourceVM.PlayAudio();
                 break;
 
             case RenderMethod.RenderUser:
                 // fetch indices of config sofa files that match the randomly chosen user index
-                List<int> userIndicies = SteamAudioManager.Singleton.GetUserSOFAIndices(selectedUserIndex);
-
-                SteamAudioManager.Singleton.currentHRTF = userIndicies[1];          // select the second config of the near field sofa files
-                IsLastUserIndex = true;                                             // change flag notifiying that this is the final config file
-                sourceVM.nearFieldSource.audioSource.Play();                        // play near field source
+                List<int> userIndicies = dataVM.FetchUserSOFAIndicies();
+                SteamAudioManager.Singleton.currentHRTF = userIndicies[1];
+                IsLastUserIndex = true;
+                sourceVM.nearFieldSource.audioSource.Play();
                 break;
 
             default: break;
         }
 
-        recorder.ToggleRecording();                                                 // start new recording
-        timer.Begin(SimulationLength, SelectedRenderMethod);                        // start new timer
+        recorder.ToggleRecording();
+        timer.Begin(RenderDuration);
     }
 
     // Stop rendering process
@@ -167,74 +163,38 @@ public class RenderManager : MonoBehaviour
 
         switch (SelectedRenderMethod)
         {
-            case RenderMethod.AllAtOnce: case RenderMethod.RenderRooms:
-                CalculateGeometry();
+            case RenderMethod.RenderRooms:
+            {
+                sourceVM.CalculateGeometry();
                 SteamAudioManager.Singleton.currentHRTF = 0;       
                 Logger.Log(speaker: sourceVM.Speaker);
                 break;
+            }
 
             case RenderMethod.RenderUser:
+            {
                 SteamAudioManager.Singleton.currentHRTF = 0;
                 Logger.Log(speaker: sourceVM.nearFieldSource);
                 break;
-            
+            }
+
             default: break;
         }
     }
 
-    private void HandleTimerCallback()
+    private void HandleRender()
     {
         switch (SelectedRenderMethod)
         {
             case RenderMethod.RenderRooms:
             {
-                if (!SteamAudioManager.Singleton.IsLastSOFA())
-                {
-                    ContinueRender();
-                }
-                else
-                {
-                    StopRender();
-
-                    if (!sourceVM.IsLastRoom)
-                    {
-                        sourceVM.UpdateSelectedSpeaker();
-                        dataVM.UpdateRenderPath();
-                        receiver.transform.localPosition = Dimensions.defaultLocation;
-                        StartRender();
-                    }
-                    else if (sourceVM.IsLastRoom)
-                    {
-                        SelectedRenderMethod = RenderMethod.RenderUser;
-                        StartRender();
-                    }
-                }
+                HandleRenderRooms();
                 break;
             }
 
             case RenderMethod.RenderUser:
             {
-                if (!IsLastUserIndex)
-                {
-                    ContinueRender();
-                } 
-                else if (IsLastUserIndex)
-                {
-                    StopRender();
-                }
-                break;
-            }
-
-            case RenderMethod.AllAtOnce:
-            {
-                if (!SteamAudioManager.Singleton.IsLastSOFA())
-                {
-                    ContinueRender();        
-                }
-                else if (SteamAudioManager.Singleton.IsLastSOFA())
-                {
-                    StopRender();
-                }
+                HandleRenderUser();
                 break;
             }
 
@@ -244,25 +204,55 @@ public class RenderManager : MonoBehaviour
         NotifyObservers();
     }
 
+    private void HandleRenderRooms()
+    {
+        if (!SteamAudioManager.Singleton.IsLastSOFA())
+        {
+            ContinueRender();
+        }
+        else
+        {
+            StopRender();
+
+            HandleEndOfRenderRooms();
+        }
+    }
+
+    private void HandleRenderUser()
+    {
+        if (!IsLastUserIndex)
+        {
+            ContinueRender();
+        } 
+        else if (IsLastUserIndex)
+        {
+            StopRender();
+        }
+    }
+
+    private void HandleEndOfRenderRooms()
+    {
+        if (!sourceVM.IsLastRoom)
+        {
+            sourceVM.UpdateSelectedSpeaker();
+            dataVM.UpdateRenderPath();
+            sourceVM.SetDefaulPosition();
+            StartRender();
+        }
+        else if (sourceVM.IsLastRoom)
+        {
+            SelectedRenderMethod = RenderMethod.RenderUser;
+            StartRender();
+        }
+    }
+
     // Used by the AudioCapturer class in conjunction with OnAudioFilterRead() which is a MonoBehavior class that needs an AudioSource.
     // This method binds the Recorder class together with the Audio.
     public void TransmitData(float[] data)
     {
-        if (recorder != null && recorder.IsRecording() && IsRendering) {
+        if (recorder != null && recorder.IsRecording && IsRendering) {
             recorder.ConvertAndWrite(data);
         }
-    }
-
-    // - Audio Methods
-    // Called when we want to move to the next HRTF in our list and return back to the first one when we are at the last
-    private void UpdateSOFA()
-    {
-        SteamAudioManager.Singleton.currentHRTF++;
-    }
-
-    public void ToggleStartUp()
-    {
-        didStartUpComplete = !didStartUpComplete;
     }
 
     public void SetRenderMethod(RenderMethod renderMethod)
@@ -270,14 +260,6 @@ public class RenderManager : MonoBehaviour
         SelectedRenderMethod = renderMethod;
         SettingsManager.Instance.settings.selectedRenderMethod = renderMethod.ToString();
         SettingsManager.Instance.Save();
-    }
-
-    private void CalculateGeometry()
-    {
-        // Calculating geometry
-        sourceVM.Speaker.DistanceToReceiver = Calculator.CalculateDistanceToReceiver(receiver.transform, sourceVM.Speaker.audioSource.transform);
-        sourceVM.Speaker.Azimuth = Calculator.CalculateAzimuth(receiver.transform, sourceVM.Speaker.audioSource.transform);
-        sourceVM.Speaker.Elevation = Calculator.CalculateElevation(receiver.transform, sourceVM.Speaker.audioSource.transform);
     }
 
     public void AddObserver(IRenderObserver observer)
@@ -320,7 +302,7 @@ public class RenderManager : MonoBehaviour
         }
         
         // sort speakers by name
-        foundSpeakers.Sort((speaker1, speaker2) => speaker1.Name.CompareTo(speaker2.Name));
+        foundSpeakers.Sort((speaker1, speaker2) => speaker1.name.CompareTo(speaker2.name));
         return foundSpeakers;
     }
 
@@ -329,7 +311,7 @@ public class RenderManager : MonoBehaviour
         GameObject gameObject = GameObject.FindGameObjectWithTag("nearField");
         AudioSource nearFieldAudioSource = gameObject.GetComponent<AudioSource>();
         SteamAudioSource nearFieldSteamSource = gameObject.GetComponent<SteamAudioSource>();
-        Speaker nearFieldSpeaker = new(source: nearFieldAudioSource, steamSource: nearFieldSteamSource);
+        Speaker nearFieldSpeaker = new(audioSource: nearFieldAudioSource, steamAudioSource: nearFieldSteamSource);
         
         return nearFieldSpeaker;   
     }

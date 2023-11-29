@@ -37,7 +37,7 @@ struct Calculator
 
         azimuth = (azimuth + 360) % 360;
      
-        return  azimuth;
+        return azimuth;
     }
 
     public static float CalculateElevation(Transform receiverTransform, Transform speakerTransform)
@@ -56,6 +56,34 @@ struct Calculator
         return elevation;
     }
 
+    public static Vector3 CalculateNewPosition()
+    {
+        float randomX = UnityEngine.Random.Range(Dimensions.lowerThreshold.x, Dimensions.upperThreshold.x);
+        float randomY = UnityEngine.Random.Range(Dimensions.lowerThreshold.y, Dimensions.upperThreshold.y);
+        float randomZ = UnityEngine.Random.Range(Dimensions.lowerThreshold.z, Dimensions.upperThreshold.z);
+
+        Vector3 newPosition = new(randomX, randomY, randomZ);
+
+        return newPosition;
+    }
+
+    public static int RandomiseIndex()
+    {
+        int randomIndex = UnityEngine.Random.Range(0, Paths.amountOfUserConfigPairs);
+        
+        return randomIndex; 
+    }
+
+    public static float CalculateRenderDuration(float duration, int amountOfRenders)
+    {
+        return RenderManager.Instance.SelectedRenderMethod switch
+        {
+            RenderMethod.RenderRooms => 2 * duration,
+            RenderMethod.RenderUser => 2 * duration,
+            _ => 0.0f,
+        };
+    }
+
     private static float CalculateReflectionDistance(Transform receiverTransform, Transform speakerTransform, Transform wallTransform)
     {
         // Get normal of the reflection
@@ -71,23 +99,5 @@ struct Calculator
         float cSpeaker = Mathf.Sqrt(Mathf.Pow(aSpeaker, 2) + Mathf.Pow(bSpeaker, 2));
 
         return cReceiver + cSpeaker;
-    }
-
-    public static Vector3 CalculateNewPosition()
-    {
-        float randomX = UnityEngine.Random.Range(Dimensions.lowerThreshold.x, Dimensions.upperThreshold.x);
-        float randomY = UnityEngine.Random.Range(Dimensions.lowerThreshold.y, Dimensions.upperThreshold.y);
-        float randomZ = UnityEngine.Random.Range(Dimensions.lowerThreshold.z, Dimensions.upperThreshold.z);
-
-        Vector3 newPosition = new(randomX, randomY, randomZ);
-
-        return newPosition;
-    }
-
-    public static int RandomiseIndex()
-    {
-        int randomIndex = UnityEngine.Random.Range(0, 11);
-        
-        return randomIndex; 
     }
 }

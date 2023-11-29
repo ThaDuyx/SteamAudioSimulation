@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using SteamAudio;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -14,8 +12,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle, distAttenuationToggle, airAbsorptionToggle;
-    [SerializeField] private TMP_InputField roomsInputField; 
-    [SerializeField] private Button defaultLocationButton, locationRandomiserButton;
+    [SerializeField] private TMP_InputField roomsInputField;
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     void Start()
@@ -32,7 +29,8 @@ public class RenderView : MonoBehaviour, IRenderObserver
         
         HandleRender();
     }
-    
+
+    // Observer notification method
     public void OnNotify()
     {
         SetUI();
@@ -44,8 +42,6 @@ public class RenderView : MonoBehaviour, IRenderObserver
         if (Input.GetKeyDown(KeyCode.T))
         {
             ExcecuteRender();
-
-            SetUI();
         }
 
         if (Input.GetKeyDown(KeyCode.O))
@@ -57,12 +53,9 @@ public class RenderView : MonoBehaviour, IRenderObserver
     // Either starts or stops the simulation dependent on which state currently is active.
     private void ExcecuteRender()
     {
-        if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderRooms)
-        {   
-            RenderManager.Instance.SetupRender();
-        }
-        
+        RenderManager.Instance.SetupRender();  
         RenderManager.Instance.ToggleRender();
+        SetUI();
     }
 
     // Called in the Update() MonoBehavior method
@@ -71,8 +64,8 @@ public class RenderView : MonoBehaviour, IRenderObserver
         if (RenderManager.Instance.IsTiming && RenderManager.Instance.IsRendering)
         {
             // Update time while rendering
-            timerText.text = "Time left: " + RenderManager.Instance.TimeLeft + "s";
-            simulationDurationText.text = "Time left: " + RenderManager.Instance.TimeLeftOfRender + "s";
+            timerText.text = "Time left: " + RenderManager.Instance.CurrentTimeLeft + "s";
+            simulationDurationText.text = "Time left: " + RenderManager.Instance.TotalTimeLeft + "s";
         }
     }
 
@@ -95,14 +88,6 @@ public class RenderView : MonoBehaviour, IRenderObserver
             audioClipDropdown.options.Add(new TMP_Dropdown.OptionData() { text = audioClip });
         }
         
-        audioClipDropdown.options.ForEach(option => 
-        {
-            if (RenderManager.Instance.sourceVM.AudioClipIsTheSame(option.text))
-            {
-                audioClipDropdown.value = audioClipDropdown.options.IndexOf(option);
-            } 
-        });
-
         roomDropdown.options.Clear();
         for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
         {
@@ -119,16 +104,6 @@ public class RenderView : MonoBehaviour, IRenderObserver
         {
             renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
         }
-        renderMethodDropdown.options.ForEach((option) => 
-        {
-            if (option.text == RenderManager.Instance.SelectedRenderMethod.ToString())
-            {
-                int index = renderMethodDropdown.options.IndexOf(option);
-                renderMethodDropdown.value = index;
-
-            }
-        });
-        renderMethodDropdown.RefreshShownValue();
 
         sofaFileDropdown.options.Clear();
         foreach (string sofaFile in SteamAudioManager.Singleton.hrtfNames)
@@ -136,8 +111,6 @@ public class RenderView : MonoBehaviour, IRenderObserver
             sofaFileDropdown.options.Add(new TMP_Dropdown.OptionData() { text = sofaFile});
         }
         sofaFileDropdown.RefreshShownValue();
-
-        RenderManager.Instance.ToggleStartUp();
     }
 
     // Updates elements in the UI
@@ -157,6 +130,8 @@ public class RenderView : MonoBehaviour, IRenderObserver
         volumeSlider.value = RenderManager.Instance.sourceVM.Volume;
         volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
 
+        renderMethodDropdown.RefreshShownValue();
+
         directMixLevelSlider.value = RenderManager.Instance.sourceVM.DirectMixLevel;
         directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
 
@@ -164,9 +139,6 @@ public class RenderView : MonoBehaviour, IRenderObserver
         reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
 
         applyReflToHRTFToggle.isOn = RenderManager.Instance.sourceVM.ApplyHRTFToReflections;
-
-        audioClipDropdown.value = GetAudioClipIndex();
-        audioClipDropdown.RefreshShownValue();
 
         lowFreqAbsorpSlider.value = RoomManager.Instance.Material.lowFreqAbsorption;
         lowFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = lowFreqAbsorpSlider.value.ToString("F2");
@@ -176,6 +148,15 @@ public class RenderView : MonoBehaviour, IRenderObserver
         highFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = highFreqAbsorpSlider.value.ToString("F2");
         scatteringSlider.value = RoomManager.Instance.Material.scattering;
         scatteringSlider.GetComponentInChildren<TMP_Text>().text = scatteringSlider.value.ToString("F2");
+
+        audioClipDropdown.options.ForEach(option => 
+        {
+            if (RenderManager.Instance.sourceVM.AudioClipIsTheSameAs(option.text))
+            {
+                audioClipDropdown.value = audioClipDropdown.options.IndexOf(option);
+            } 
+        });
+        audioClipDropdown.RefreshShownValue();
     }
 
     public void SpeakerDropdownChanged(int index)
@@ -304,20 +285,5 @@ public class RenderView : MonoBehaviour, IRenderObserver
     public void SliderEndDrag()
     {
         RenderManager.Instance.sourceVM.PersistRoom();
-    }
-
-    // Used for retrieving the index from the selected audio clip
-    private int GetAudioClipIndex()
-    {
-        for (int i = 0; i < audioClipDropdown.options.Count; i++)
-        {
-            if (audioClipDropdown.options[i].text == RenderManager.Instance.sourceVM.AudioClip + ".wav"
-            || audioClipDropdown.options[i].text == RenderManager.Instance.sourceVM.AudioClip + ".mp3")
-            {
-                return i;
-            }
-        }
-
-        return 0;
     }
 }

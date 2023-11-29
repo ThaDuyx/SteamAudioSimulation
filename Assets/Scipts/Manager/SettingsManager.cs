@@ -3,6 +3,7 @@ public class SettingsManager : MonoBehaviour
 {
     public static SettingsManager Instance { get; private set; }
     public Settings settings;
+    private bool _didStartUpComplete = false;
 
     private void Awake()
     {
@@ -14,15 +15,18 @@ public class SettingsManager : MonoBehaviour
         {
             Instance = this;
         }
-    }
 
-    private void Start()
-    {
         settings = DataManager.Instance.LoadSettings();
     }
 
     public void Save()
     {
         DataManager.Instance.SaveSettings(settings);
+    }
+
+    public bool DidStartUpComplete 
+    {
+        get { return _didStartUpComplete ; }
+        set { _didStartUpComplete = value; }
     }
 }
