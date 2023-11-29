@@ -1,0 +1,319 @@
+Simulation Log : 2023-11-28 11:16:42
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker1
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 3.964239 units
+        Azimuth angle : 115.9066
+        Elevation angle : 14.42105
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.2052857
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:16:54
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker10
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 8.363337 units
+        Azimuth angle : 1.175164
+        Elevation angle : 7.224416
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:17:06
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker2
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 7.110174 units
+        Azimuth angle : 203.8933
+        Elevation angle : 7.01968
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:17:18
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker3
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 13.02741 units
+        Azimuth angle : 137.5814
+        Elevation angle : 5.181174
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:17:30
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker4
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 8.704375 units
+        Azimuth angle : 268.0687
+        Elevation angle : 7.490985
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:17:42
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker5
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 6.922224 units
+        Azimuth angle : 337.6137
+        Elevation angle : 7.518741
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:17:54
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker6
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 8.014677 units
+        Azimuth angle : 204.9234
+        Elevation angle : 7.34962
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.35
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:18:06
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker7
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 3.1545 units
+        Azimuth angle : 292.1306
+        Elevation angle : 18.14363
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:18:18
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker8
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 3.250948 units
+        Azimuth angle : 154.0337
+        Elevation angle : 20.12882
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:18:30
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : speaker9
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 9.85273 units
+        Azimuth angle : 24.19225
+        Elevation angle : 6.769387
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+
+Simulation Log : 2023-11-28 11:18:42
+// --------------------
+Room name : room1
+Low Freq. Absorption : 1
+Mid Freq. Absorption : 1
+High Freq. Absorption : 1
+Scattering : 0.7785714
+
+Sample rate : 48000 Hz
+
+Name : userSource
+        Audio Clip : sweep_48kHz
+    Geometry : 
+        Distance To Receiver : 0 units
+        Azimuth angle : 0
+        Elevation angle : 0
+
+    Parameters : 
+        Real Time Bounces : 5
+        Volume: 0.091
+        Direct Mix Level : 0.2
+        Reflection Mix Level : 1 
+
+        HRTF Applied To Reflections? : yes
+        Distance Attenuation Applied : no
+        Air Absorption Applied : no
+
+
+

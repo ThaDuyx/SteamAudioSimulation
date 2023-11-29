@@ -1,9 +1,10 @@
+using System;
+
+[Serializable]
 public class Settings 
 {
-    public string selectedRoomDirectory;
-    public string selectedRenderDirectory;
     public int selectedSOFA;
-    public string selectedRenderMethod;
+    public string selectedRoomDirectory, selectedRenderDirectory, selectedRenderMethod;
 
     public Settings(string selectedRoomDirectory, string selectedRenderDirectory, int selectedSOFA, string selectedRenderMethod) 
     {

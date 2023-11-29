@@ -6,15 +6,13 @@ public class Speaker
     public AudioSource audioSource;
     public SteamAudioSource steamAudioSource;
 
-    public string Name { get; set; }
-    public float Azimuth{ get; set; }
-    public float Elevation { get; set; }
-    public float DistanceToReceiver { get; set; }
+    public string name;
+    public float azimuth, elevation, distanceToReceiver;
 
-    public Speaker(AudioSource source, SteamAudioSource steamSource)
+    public Speaker(AudioSource audioSource, SteamAudioSource steamAudioSource)
     {
-        audioSource = source;
-        steamAudioSource = steamSource;
-        Name = source.name;
+        this.audioSource = audioSource;
+        this.steamAudioSource = steamAudioSource;
+        name = audioSource.name;
     }
 }

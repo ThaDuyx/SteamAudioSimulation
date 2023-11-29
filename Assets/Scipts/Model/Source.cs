@@ -3,14 +3,9 @@ using System;
 [Serializable]
 public class Source
 {
-    public string name;
-    public float volume;
-    public float directMixLevel;
-    public float reflectionMixLevel;
-    public string audioClip;
-    public int applyHRTFToReflections;
-    public int airAbsorption;
-    public int distanceAttenuation;
+    public string name, audioClip;
+    public float volume, directMixLevel, reflectionMixLevel;
+    public int applyHRTFToReflections, airAbsorption, distanceAttenuation;
 
     public Source(string name, float volume, float directMixLevel, float reflectionMixLevel, string audioClip, int applyHRTFToReflections, int airAbsorption, int distanceAttenuation)
     {

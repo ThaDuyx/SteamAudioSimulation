@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using SteamAudio;
 using UnityEngine;
 
 // Reference: http://abolfazltanha.com/Source-codes-92045/
@@ -8,13 +9,12 @@ using UnityEngine;
 public class Recorder
 {
     private readonly int headerSize = 44; // Default for uncompressed wav
-    private bool _isRecording = false;
+    public bool IsRecording { get; private set;}
     private FileStream fileStream;
     private float[] tempDataSource;
     private readonly int outputSampleRate;
     private string fileName;
 
-    // Recorder Constructor
     public Recorder(int outputSampleRate)
     {
         this.outputSampleRate = outputSampleRate;
@@ -22,7 +22,7 @@ public class Recorder
 
     public void ToggleRecording()
     {
-        if (_isRecording)
+        if (IsRecording)
         {
             StopRecording();
         }
@@ -34,24 +34,12 @@ public class Recorder
 
     public void StartRecording() 
     {
-        string sofaFile = RenderManager.Instance.ActiveSOFAName;
-        string micPairIndicator;
-        if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderUser)
-        {
-            micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "")[1..].Insert(1, "_");
-        } 
-        else
-        {
-            micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "").Insert(1, "_");
-        }
-        
-        string concatenatedString = "mic_" + micPairIndicator;
-        fileName = Path.GetFileNameWithoutExtension(concatenatedString) + ".wav";
+        fileName = ExtractFileName();
 
-        if (!_isRecording)
+        if (!IsRecording)
         {
             StartWriting(fileName);
-            _isRecording = true;
+            IsRecording = true;
         }
         else 
         {
@@ -61,13 +49,13 @@ public class Recorder
 
     public void StopRecording()
     {
-        _isRecording = false;
+        IsRecording = false;
         WriteHeader();
     }
 
     private void StartWriting(string name) 
     {
-        fileStream = new FileStream(RenderManager.Instance.recordingPath + fileName, FileMode.Create);
+        fileStream = new FileStream(RenderManager.Instance.dataVM.recordingPath + fileName, FileMode.Create);
         
         // fileStream = new FileStream("/Users/duyx/Code/Jabra/python/renders/" + fileName, FileMode.Create);
         // fileStream = new FileStream(Application.persistentDataPath + "/" + fileName, FileMode.Create);
@@ -132,8 +120,22 @@ public class Recorder
         fileStream.Close();
     }
 
-    public bool IsRecording()
+    private string ExtractFileName()
     {
-        return _isRecording;
+        string sofaFile = SteamAudioManager.Singleton.ActiveSOFAName();
+        string micPairIndicator;
+        
+        if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderUser)
+        {
+            micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "")[1..].Insert(1, "_");
+        } 
+        else
+        {
+            micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "").Insert(1, "_");
+        }
+        
+        string concatenatedString = "mic_" + micPairIndicator;
+
+        return Path.GetFileNameWithoutExtension(concatenatedString) + ".wav";
     }
 }
