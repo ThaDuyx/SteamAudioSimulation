@@ -55,8 +55,7 @@ public class Recorder
 
     private void StartWriting(string name) 
     {
-        fileStream = new FileStream(RenderManager.Instance.dataVM.recordingPath + fileName, FileMode.Create);
-        
+        fileStream = new FileStream(RenderManager.Instance.dataVM.RecordingPath + fileName, FileMode.Create);        
         // fileStream = new FileStream("/Users/duyx/Code/Jabra/python/renders/" + fileName, FileMode.Create);
         // fileStream = new FileStream(Application.persistentDataPath + "/" + fileName, FileMode.Create);
         

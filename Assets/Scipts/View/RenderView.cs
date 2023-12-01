@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class RenderView : MonoBehaviour, IRenderObserver
 {
     [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
-    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown;
+    [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown, renderAmountDropdown;
     [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
     [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle, distAttenuationToggle, airAbsorptionToggle;
@@ -41,21 +41,14 @@ public class RenderView : MonoBehaviour, IRenderObserver
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            ExcecuteRender();
+            RenderManager.Instance.ToggleRender();
+            SetUI();
         }
 
         if (Input.GetKeyDown(KeyCode.O))
         {
             RenderManager.Instance.sourceVM.ToggleAudio();
         }
-    }
-
-    // Either starts or stops the simulation dependent on which state currently is active.
-    private void ExcecuteRender()
-    {
-        RenderManager.Instance.SetupRender();  
-        RenderManager.Instance.ToggleRender();
-        SetUI();
     }
 
     // Called in the Update() MonoBehavior method
@@ -108,9 +101,16 @@ public class RenderView : MonoBehaviour, IRenderObserver
         sofaFileDropdown.options.Clear();
         foreach (string sofaFile in SteamAudioManager.Singleton.hrtfNames)
         {
-            sofaFileDropdown.options.Add(new TMP_Dropdown.OptionData() { text = sofaFile});
+            sofaFileDropdown.options.Add(new TMP_Dropdown.OptionData() { text = sofaFile });
         }
         sofaFileDropdown.RefreshShownValue();
+
+        renderAmountDropdown.options.Clear();
+        for (int i = 1; i < Paths.renderAmount; i++) 
+        {
+            renderAmountDropdown.options.Add(new TMP_Dropdown.OptionData() { text = i.ToString() });
+        }
+        renderAmountDropdown.RefreshShownValue();
     }
 
     // Updates elements in the UI
@@ -272,6 +272,11 @@ public class RenderView : MonoBehaviour, IRenderObserver
         
         // Call-back function that reloads the UI with new data when scenes has been changed
         RoomManager.OnSceneUnloaded += HandleSceneUnloaded;
+    }
+
+    public void RenderAmountDropdownChanged(int index)
+    {
+        RenderManager.Instance.AmountOfRenders = index;
     }
 
     // callback function used to wait while managers are loading whenever we change scene

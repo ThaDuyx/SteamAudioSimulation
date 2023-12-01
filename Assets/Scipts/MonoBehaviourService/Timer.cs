@@ -9,10 +9,9 @@ public class Timer : MonoBehaviour
     
     public bool IsActive { get; private set; }
     public string CurrentTime { get { return duration.ToString(); }}
-    public string TotalTime { get { return simulationDuration.ToString(); }}
+    public string TotalTime { get { return totalDuration.ToString(); }}
     private bool didStart = false;
-    private float duration;
-    private float simulationDuration;
+    private float duration, totalDuration;
 
     public void Begin(float duration)
     {
@@ -21,7 +20,7 @@ public class Timer : MonoBehaviour
         
         if (!didStart)
         {
-            simulationDuration = Calculator.CalculateRenderDuration(duration, SteamAudioManager.Singleton.SOFACount());
+            totalDuration = Calculator.CalculateRenderDuration(duration, SteamAudioManager.Singleton.SOFACount());
             didStart = true;
         } 
 
@@ -40,7 +39,7 @@ public class Timer : MonoBehaviour
         {
             yield return new WaitForSeconds(1.0f);
             duration--;
-            simulationDuration--;
+            totalDuration--;
         }
         
         IsActive = false;
