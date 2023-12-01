@@ -246,6 +246,11 @@ public class SourceViewModel
     }
     public void RandomisePosition()
     {
-        receiver.transform.localPosition = Calculator.CalculateNewPosition();
+        receiver.transform.localPosition = Calculator.CalculateNewPosition(lowerThreshold: Dimensions.lowerThreshold, upperThreshold: Dimensions.upperThreshold);
+    }
+
+    public void RandomiseSourcePosition()
+    {
+        speakers[0].audioSource.transform.localPosition = Calculator.CalculateNewPosition(lowerThreshold: Dimensions.lowerThreshold, upperThreshold: Dimensions.upperThreshold);
     }
 }

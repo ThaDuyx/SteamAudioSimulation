@@ -59,6 +59,7 @@ public class RenderManager : MonoBehaviour
         // initialise speaker list & near field object
         List<Speaker> farFieldSpeakers = FindFarFieldSpeakers();
         Speaker nearFieldSpeaker = FindNearFieldSpeaker();
+        Dimensions.defaultSourceLocation = farFieldSpeakers[0].audioSource.transform.localPosition;
         
         // construct view models 
         sourceVM = new(speakers: farFieldSpeakers, nearFieldSource: nearFieldSpeaker, receiver: receiver);
@@ -74,7 +75,7 @@ public class RenderManager : MonoBehaviour
     // callback method issued when the timer ends
     public void HandleTimerCompletion()
     {
-        Timer.OnTimerEnded += HandleRender;
+        Timer.OnTimerEnded += HandleRenderProgress;
     }
 
     // - Render Methods
@@ -188,7 +189,7 @@ public class RenderManager : MonoBehaviour
         }
     }
 
-    private void HandleRender()
+    private void HandleRenderProgress()
     {
         switch (SelectedRenderMethod)
         {

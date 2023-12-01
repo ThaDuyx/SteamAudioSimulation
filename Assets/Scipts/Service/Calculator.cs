@@ -1,5 +1,5 @@
 using System;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Numerics;
 using UnityEngine;
 
 struct Calculator
@@ -20,7 +20,7 @@ struct Calculator
         {
             // Pythagoras: b = sqrt(c^2 - a^2)
             float a = Mathf.Abs(receiverTransform.position.y - speakerTransform.position.y);
-            float c = Vector3.Distance(receiverTransform.position, speakerTransform.position);
+            float c = UnityEngine.Vector3.Distance(receiverTransform.position, speakerTransform.position);
             float b = Mathf.Sqrt(Mathf.Pow(c, 2) - Mathf.Pow(a, 2));
             
             return  b;
@@ -30,7 +30,7 @@ struct Calculator
     public static float CalculateAzimuth(Transform receiverTransform, Transform speakerTransform)
     {
         // Retrieving the direction vector of the receiver
-        Vector3 direction = speakerTransform.position - receiverTransform.position;
+        UnityEngine.Vector3 direction = speakerTransform.position - receiverTransform.position;
 
         // Calculating azimuth: atan(x0/z0)
         float azimuth = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
@@ -43,7 +43,7 @@ struct Calculator
     public static float CalculateElevation(Transform receiverTransform, Transform speakerTransform)
     {
         // Retrieving the direction vector of the receiver
-        Vector3 direction = speakerTransform.position - receiverTransform.position;
+        UnityEngine.Vector3 direction = speakerTransform.position - receiverTransform.position;
 
         // Calculating distance by: sqrt(x^2 + z^2)
         float distance = (float)Math.Sqrt(Math.Pow(direction.x, 2) + (float)Math.Pow(direction.z, 2));
@@ -56,13 +56,13 @@ struct Calculator
         return elevation;
     }
 
-    public static Vector3 CalculateNewPosition()
+    public static UnityEngine.Vector3 CalculateNewPosition(UnityEngine.Vector3 upperThreshold, UnityEngine.Vector3 lowerThreshold)
     {
         float randomX = UnityEngine.Random.Range(Dimensions.lowerThreshold.x, Dimensions.upperThreshold.x);
         float randomY = UnityEngine.Random.Range(Dimensions.lowerThreshold.y, Dimensions.upperThreshold.y);
         float randomZ = UnityEngine.Random.Range(Dimensions.lowerThreshold.z, Dimensions.upperThreshold.z);
 
-        Vector3 newPosition = new(randomX, randomY, randomZ);
+        UnityEngine.Vector3 newPosition = new(randomX, randomY, randomZ);
 
         return newPosition;
     }
