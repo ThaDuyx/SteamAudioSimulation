@@ -150,7 +150,17 @@ public class DataManager : MonoBehaviour
                 Directory.CreateDirectory(Application.persistentDataPath + "/systemData/");
             }
 
-            Settings defaultSettings = new(selectedRoomDirectory: Paths.roomsPath, selectedRenderDirectory: "", selectedSOFA: 0, selectedRenderMethod: "OneByOne");
+            Settings defaultSettings = new(
+                selectedRoomDirectory: Paths.roomsPath, 
+                selectedRenderDirectory: "", 
+                selectedSOFA: 0, 
+                selectedRenderMethod: RenderMethod.RenderRooms.ToString(), 
+                reflectionBounce: 0,
+                lowFreqAbsorption: 0.0f,
+                midFreqAbsorption: 0.0f,
+                highFreqAbsorption: 0.0f,
+                scattering: 0.0f
+                );
             
             string json = JsonUtility.ToJson(defaultSettings, true);
             File.WriteAllText(persistentPath + "data.json", json);

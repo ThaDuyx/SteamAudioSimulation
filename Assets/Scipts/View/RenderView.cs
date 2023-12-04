@@ -97,6 +97,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
         {
             renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
         }
+        renderMethodDropdown.RefreshShownValue();
 
         sofaFileDropdown.options.Clear();
         foreach (string sofaFile in SteamAudioManager.Singleton.hrtfNames)
@@ -106,11 +107,40 @@ public class RenderView : MonoBehaviour, IRenderObserver
         sofaFileDropdown.RefreshShownValue();
 
         renderAmountDropdown.options.Clear();
-        for (int i = 1; i < Paths.renderAmount; i++) 
+        for (int i = 1; i < Constants.renderAmountAllowed; i++) 
         {
             renderAmountDropdown.options.Add(new TMP_Dropdown.OptionData() { text = i.ToString() });
         }
         renderAmountDropdown.RefreshShownValue();
+
+        bounceSlider.value = SettingsManager.Instance.settings.reflectionBounce;
+        SteamAudioSettings.Singleton.realTimeBounces = SettingsManager.Instance.settings.reflectionBounce;
+        bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
+
+        volumeSlider.value = RenderManager.Instance.sourceVM.Volume;
+        volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
+
+        directMixLevelSlider.value = RenderManager.Instance.sourceVM.DirectMixLevel;
+        directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
+
+        reflectionMixLevelSlider.value = RenderManager.Instance.sourceVM.ReflectionMixLevel;
+        reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
+
+        lowFreqAbsorpSlider.value = SettingsManager.Instance.settings.lowFreqAbsorption;
+        RoomManager.Instance.Material.lowFreqAbsorption = SettingsManager.Instance.settings.lowFreqAbsorption;
+        lowFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = lowFreqAbsorpSlider.value.ToString("F2");
+        
+        midFreqAbsorpSlider.value = SettingsManager.Instance.settings.midFreqAbsorption;
+        RoomManager.Instance.Material.midFreqAbsorption = SettingsManager.Instance.settings.midFreqAbsorption;
+        midFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = midFreqAbsorpSlider.value.ToString("F2");
+        
+        highFreqAbsorpSlider.value = SettingsManager.Instance.settings.highFreqAbsorption;
+        RoomManager.Instance.Material.highFreqAbsorption = SettingsManager.Instance.settings.highFreqAbsorption;
+        highFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = highFreqAbsorpSlider.value.ToString("F2");
+
+        scatteringSlider.value = SettingsManager.Instance.settings.scattering;
+        RoomManager.Instance.Material.scattering = SettingsManager.Instance.settings.scattering;
+        scatteringSlider.GetComponentInChildren<TMP_Text>().text = scatteringSlider.value.ToString("F2");
     }
 
     // Updates elements in the UI
@@ -124,30 +154,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
         sampleRateText.text = "fs: " + UnityEngine.AudioSettings.outputSampleRate.ToString();
 
-        bounceSlider.value = RenderManager.Instance.sourceVM.RealTimeBounces;
-        bounceSlider.GetComponentInChildren<TMP_Text>().text = bounceSlider.value.ToString();
-
-        volumeSlider.value = RenderManager.Instance.sourceVM.Volume;
-        volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
-
-        renderMethodDropdown.RefreshShownValue();
-
-        directMixLevelSlider.value = RenderManager.Instance.sourceVM.DirectMixLevel;
-        directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
-
-        reflectionMixLevelSlider.value = RenderManager.Instance.sourceVM.ReflectionMixLevel;
-        reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
-
         applyReflToHRTFToggle.isOn = RenderManager.Instance.sourceVM.ApplyHRTFToReflections;
-
-        lowFreqAbsorpSlider.value = RoomManager.Instance.Material.lowFreqAbsorption;
-        lowFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = lowFreqAbsorpSlider.value.ToString("F2");
-        midFreqAbsorpSlider.value = RoomManager.Instance.Material.midFreqAbsorption;
-        midFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = midFreqAbsorpSlider.value.ToString("F2");
-        highFreqAbsorpSlider.value = RoomManager.Instance.Material.highFreqAbsorption;
-        highFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = highFreqAbsorpSlider.value.ToString("F2");
-        scatteringSlider.value = RoomManager.Instance.Material.scattering;
-        scatteringSlider.GetComponentInChildren<TMP_Text>().text = scatteringSlider.value.ToString("F2");
 
         audioClipDropdown.options.ForEach(option => 
         {
@@ -188,7 +195,10 @@ public class RenderView : MonoBehaviour, IRenderObserver
     }
     public void BounceSliderEndDrag()
     {
-        RenderManager.Instance.sourceVM.RealTimeBounces = (int)bounceSlider.value;
+        SteamAudioSettings.Singleton.realTimeBounces = (int)bounceSlider.value;
+        SettingsManager.Instance.settings.reflectionBounce = (int)bounceSlider.value;
+        SettingsManager.Instance.Save();
+        
         RoomManager.Instance.ChangeScene(sceneIndexInBuildSettings: RoomManager.Instance.ActiveSceneIndex);
     }
     
@@ -219,21 +229,29 @@ public class RenderView : MonoBehaviour, IRenderObserver
     { 
         RoomManager.Instance.Material.lowFreqAbsorption = value; 
         lowFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = lowFreqAbsorpSlider.value.ToString("F2");
+        SettingsManager.Instance.settings.lowFreqAbsorption = value;
+        SettingsManager.Instance.Save();
     }
     public void MidFreqAbsorpSliderChanged(float value) 
     { 
         RoomManager.Instance.Material.midFreqAbsorption = value; 
         midFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = midFreqAbsorpSlider.value.ToString("F2");
+        SettingsManager.Instance.settings.midFreqAbsorption = value;
+        SettingsManager.Instance.Save();
     }
     public void HighFreqAbsorpSliderChanged(float value) 
     { 
         RoomManager.Instance.Material.highFreqAbsorption = value; 
         highFreqAbsorpSlider.GetComponentInChildren<TMP_Text>().text = highFreqAbsorpSlider.value.ToString("F2");
+        SettingsManager.Instance.settings.highFreqAbsorption = value;
+        SettingsManager.Instance.Save();
     }
     public void ScatteringSliderChanged(float value) 
     {
         RoomManager.Instance.Material.scattering = value; 
         scatteringSlider.GetComponentInChildren<TMP_Text>().text = scatteringSlider.value.ToString("F2");
+        SettingsManager.Instance.settings.scattering = value;
+        SettingsManager.Instance.Save();
     }
 
     public void DistanceAttenuationToggleChanged(bool isOn) 

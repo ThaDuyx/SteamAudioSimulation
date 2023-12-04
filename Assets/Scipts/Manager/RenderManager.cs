@@ -35,11 +35,11 @@ public class RenderManager : MonoBehaviour
     private void Awake()
     {
         if (Instance != null && Instance != this)
-        { 
-            Destroy(this); 
+        {
+            Destroy(this);
         }
-        else 
-        { 
+        else
+        {
             Instance = this; 
         }
 
@@ -54,14 +54,14 @@ public class RenderManager : MonoBehaviour
 
         // find and save default location of our receiver in scene
         AudioListener receiver = FindObjectOfType<AudioListener>();
-        Dimensions.defaultLocation = receiver.transform.localPosition;
+        Dimensions.defaultReceiverLocation = receiver.transform.localPosition;
         
         // initialise speaker list & near field object
         List<Speaker> farFieldSpeakers = FindFarFieldSpeakers();
         Speaker nearFieldSpeaker = FindNearFieldSpeaker();
         Dimensions.defaultSourceLocation = farFieldSpeakers[0].audioSource.transform.localPosition;
         
-        // construct view models 
+        // construct view models
         sourceVM = new(speakers: farFieldSpeakers, nearFieldSource: nearFieldSpeaker, receiver: receiver);
         dataVM = new();
         
@@ -81,18 +81,19 @@ public class RenderManager : MonoBehaviour
     // - Render Methods
     public void SetupRender()
     {
-        if (AmountOfRenders == 0) 
+        if (AmountOfRenders == 0)
         {
             AmountOfRenders = 1;
         }
+        
         if (SelectedRenderMethod == RenderMethod.RenderRooms)
-        {   
+        {
             dataVM.CreateRootRenderFolder();
-        }   
+        }
     }
 
     public void ToggleRender()
-    {    
+    {
         if (IsRendering)
         {
             StopRender();
@@ -109,15 +110,16 @@ public class RenderManager : MonoBehaviour
     public void StartRender()
     {
         IsRendering = true;
+        sourceVM.RandomiseReceiverPosition();
 
         switch(SelectedRenderMethod)
         {
             case RenderMethod.RenderRooms:
                 dataVM.CreateFarFieldRenderFolder(renderCounter);
-                sourceVM.RandomisePosition();
+                sourceVM.RandomiseSourcePosition();
                 
                 SteamAudioManager.Singleton.currentHRTF++;
-                sourceVM.PlayAudio();
+                sourceVM.PlayFarField();
                 break;
                 
             case RenderMethod.RenderUser:
@@ -125,7 +127,7 @@ public class RenderManager : MonoBehaviour
                 
                 isLastUserIndex = false;                                    
                 SteamAudioManager.Singleton.currentHRTF = dataVM.FetchUserSOFAIndex(index: 0);
-                sourceVM.nearFieldSource.audioSource.Play();
+                sourceVM.PlayNearField();
                 break;
 
             default: break;
@@ -144,13 +146,13 @@ public class RenderManager : MonoBehaviour
         {
             case RenderMethod.RenderRooms:
                 SteamAudioManager.Singleton.currentHRTF++;
-                sourceVM.PlayAudio();
+                sourceVM.PlayFarField();
                 break;
 
             case RenderMethod.RenderUser:
                 SteamAudioManager.Singleton.currentHRTF = dataVM.FetchUserSOFAIndex(index: 1);
                 isLastUserIndex = true;
-                sourceVM.nearFieldSource.audioSource.Play();
+                sourceVM.PlayNearField();
                 break;
 
             default: break;
@@ -166,7 +168,11 @@ public class RenderManager : MonoBehaviour
         IsRendering = false;
         timer.Stop();
         recorder.StopRecording();
+
         Logger.LogTitle();
+
+        sourceVM.SetDefaultSourcePosition();
+        sourceVM.SetDefaulReceiverPosition();
 
         switch (SelectedRenderMethod)
         {
@@ -232,13 +238,13 @@ public class RenderManager : MonoBehaviour
         
         if (!IsLastFarFieldRender)
         {
-            sourceVM.UpdateSelectedSpeaker();
+            // sourceVM.UpdateSelectedSpeaker();
             dataVM.UpdateRenderPath();
-            sourceVM.SetDefaulPosition();
             StartRender();
         }
         else if (IsLastFarFieldRender)
         {
+            renderCounter = 0;
             SelectedRenderMethod = RenderMethod.RenderUser;
             StartRender();
         }

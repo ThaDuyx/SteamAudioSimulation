@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using SteamAudio;
-using Unity.VisualScripting;
-using Unity.VisualScripting.FullSerializer;
+
 public static class SteamAudioManagerExtensions
 {
     public static int SOFACount(this SteamAudioManager steamAudioManager) { return steamAudioManager.hrtfNames.Length; }

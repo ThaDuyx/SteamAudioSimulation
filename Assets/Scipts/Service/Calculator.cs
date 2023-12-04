@@ -1,5 +1,4 @@
 using System;
-using System.Numerics;
 using UnityEngine;
 
 struct Calculator
@@ -56,11 +55,11 @@ struct Calculator
         return elevation;
     }
 
-    public static UnityEngine.Vector3 CalculateNewPosition(UnityEngine.Vector3 upperThreshold, UnityEngine.Vector3 lowerThreshold)
+    public static UnityEngine.Vector3 CalculateNewPosition()
     {
-        float randomX = UnityEngine.Random.Range(Dimensions.lowerThreshold.x, Dimensions.upperThreshold.x);
-        float randomY = UnityEngine.Random.Range(Dimensions.lowerThreshold.y, Dimensions.upperThreshold.y);
-        float randomZ = UnityEngine.Random.Range(Dimensions.lowerThreshold.z, Dimensions.upperThreshold.z);
+        float randomX = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.x, Dimensions.upperReceiverThreshold.x);
+        float randomY = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.y, Dimensions.upperReceiverThreshold.y);
+        float randomZ = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.z, Dimensions.upperReceiverThreshold.z);
 
         UnityEngine.Vector3 newPosition = new(randomX, randomY, randomZ);
 
@@ -69,7 +68,7 @@ struct Calculator
 
     public static int RandomiseIndex()
     {
-        int randomIndex = UnityEngine.Random.Range(0, Paths.amountOfUserConfigPairs);
+        int randomIndex = UnityEngine.Random.Range(0, Constants.amountOfUserConfigPairs);
         
         return randomIndex; 
     }

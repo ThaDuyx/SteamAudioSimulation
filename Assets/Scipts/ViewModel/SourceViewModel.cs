@@ -37,20 +37,15 @@ public class SourceViewModel
             speakers[i].steamAudioSource.airAbsorption = room.sources[i].airAbsorption == 1;
         }
     }
-    
-    public int RealTimeBounces
-    {
-        get { return SteamAudioSettings.Singleton.realTimeBounces; }
-        set { SteamAudioSettings.Singleton.realTimeBounces = value;}
-    }
+
     public bool ApplyHRTFToReflections
     {
-        get { return speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections; }
-        set { speakers[selectedSpeaker].steamAudioSource.applyHRTFToReflections = value; }
+        get { return Speaker.steamAudioSource.applyHRTFToReflections; }
+        set { Speaker.steamAudioSource.applyHRTFToReflections = value; }
     }
     public float Volume
     {
-        get { return speakers[selectedSpeaker].audioSource.volume; }
+        get { return Speaker.audioSource.volume; }
         set {
                 if (isAllSpeakersSelected) 
                 {
@@ -58,14 +53,14 @@ public class SourceViewModel
                 }
                 else 
                 {
-                    speakers[selectedSpeaker].audioSource.volume = value; 
+                    Speaker.audioSource.volume = value; 
                 }
             }
     }
 
     public float DirectMixLevel
     {
-        get { return speakers[selectedSpeaker].steamAudioSource.directMixLevel; }
+        get { return Speaker.steamAudioSource.directMixLevel; }
         set 
         { 
             if (isAllSpeakersSelected) 
@@ -74,14 +69,14 @@ public class SourceViewModel
             }
             else 
             {
-                speakers[selectedSpeaker].steamAudioSource.directMixLevel = value; 
+                Speaker.steamAudioSource.directMixLevel = value; 
             }
         }
     }
 
     public float ReflectionMixLevel
     {
-        get { return speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel; }
+        get { return Speaker.steamAudioSource.reflectionsMixLevel; }
         set 
         { 
             if (isAllSpeakersSelected) 
@@ -90,13 +85,13 @@ public class SourceViewModel
             }
             else 
             {
-                speakers[selectedSpeaker].steamAudioSource.reflectionsMixLevel = value; 
+                Speaker.steamAudioSource.reflectionsMixLevel = value; 
             }
         }
     }
 
     public string AudioClip { 
-        get { return speakers[selectedSpeaker].audioSource.clip.name; } 
+        get { return Speaker.audioSource.clip.name; } 
         set 
         { 
             // Deletes the 4 last characters of the string meaning either '.wav' or '.mp3'. Unity does not use the file type when searching in the library.
@@ -118,14 +113,14 @@ public class SourceViewModel
             }
             else 
             {
-                speakers[selectedSpeaker].steamAudioSource.airAbsorption = value;
+                Speaker.steamAudioSource.airAbsorption = value;
             }
         }
     }
 
     public bool DistanceAttenuation
     {
-        get { return speakers[selectedSpeaker].steamAudioSource.distanceAttenuation; }
+        get { return Speaker.steamAudioSource.distanceAttenuation; }
         set 
         { 
             if (isAllSpeakersSelected)
@@ -203,24 +198,29 @@ public class SourceViewModel
 
     public void ToggleAudio()
     {
-        if (speakers[selectedSpeaker].audioSource.isPlaying)
+        if (Speaker.audioSource.isPlaying)
         {
             StopAudio();
         }
         else 
         {
-            PlayAudio();
+            PlayFarField();
         }
     }
 
-    public void PlayAudio()
+    public void PlayFarField()
     {
-        speakers[selectedSpeaker].audioSource.Play();
+        Speaker.audioSource.Play();
     }
 
     public void StopAudio()
     {
-        speakers[selectedSpeaker].audioSource.Stop();
+        Speaker.audioSource.Stop();
+    }
+
+    public void PlayNearField()
+    {
+        nearFieldSource.audioSource.Play();
     }
 
     public bool AudioClipIsTheSameAs(string audioClip)
@@ -240,17 +240,22 @@ public class SourceViewModel
         Speaker.elevation = Calculator.CalculateElevation(receiver.transform, Speaker.audioSource.transform);
     }
 
-    public void SetDefaulPosition()
+    public void SetDefaulReceiverPosition()
     {
-        receiver.transform.localPosition = Dimensions.defaultLocation;
+        receiver.transform.localPosition = Dimensions.defaultReceiverLocation;
     }
-    public void RandomisePosition()
+    public void RandomiseReceiverPosition()
     {
-        receiver.transform.localPosition = Calculator.CalculateNewPosition(lowerThreshold: Dimensions.lowerThreshold, upperThreshold: Dimensions.upperThreshold);
+        receiver.transform.localPosition = Calculator.CalculateNewPosition();
+
+    }
+    public void SetDefaultSourcePosition()
+    {
+        Speaker.audioSource.gameObject.transform.position = Dimensions.defaultSourceLocation;
     }
 
     public void RandomiseSourcePosition()
     {
-        speakers[0].audioSource.transform.localPosition = Calculator.CalculateNewPosition(lowerThreshold: Dimensions.lowerThreshold, upperThreshold: Dimensions.upperThreshold);
+        Speaker.audioSource.gameObject.transform.position = Calculator.CalculateNewPosition();
     }
 }
