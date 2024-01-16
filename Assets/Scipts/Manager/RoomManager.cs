@@ -15,6 +15,12 @@ public class RoomManager : MonoBehaviour
 
     public SteamAudioMaterial Material { get { return Resources.Load<SteamAudioMaterial>("Materials/Concrete"); } }
     
+    public int RealTimeBounces
+    {
+        get { return SteamAudioSettings.Singleton.realTimeBounces; }
+        set { SteamAudioSettings.Singleton.realTimeBounces = value; }
+    } 
+    
     // The reason why a specific index is entered in .GetSceneAt(int index) is because we know there is only going to be our active canvas scene
     // and the selected room scene which will be placed at the second index (namely 1).
     public int ActiveSceneIndex { get { return SceneManager.GetSceneAt(1).buildIndex; } }

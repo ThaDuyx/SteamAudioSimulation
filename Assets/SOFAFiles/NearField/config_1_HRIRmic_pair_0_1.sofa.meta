@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 8dd2215719fb8432388d9db3845892ad
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 1731f5ddf70efee4c8320ac591373b56, type: 3}
+  hrtfVolumeGainDB: 0
+  hrtfNormalizationType: 0

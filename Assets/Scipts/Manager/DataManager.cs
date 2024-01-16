@@ -21,7 +21,7 @@ public class DataManager : MonoBehaviour
     }
 
     // Write data from to a persisted room
-    public void SaveRoomData(Room room)
+    public void SaveRoomData(RoomData room)
     {
         string json = JsonUtility.ToJson(room, true);
 
@@ -36,26 +36,26 @@ public class DataManager : MonoBehaviour
     }
 
     // Fetch data from a persisted room or create a default setting if it doesn't exist
-    public Room LoadRoomData(int amountOfSpeakers)
+    public RoomData LoadRoomData(int amountOfSources)
     {
         int activeRoomIndex = SceneManager.GetSceneAt(1).buildIndex;
 
         if (File.Exists(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json"))
         {
             string jsonData = File.ReadAllText(Application.persistentDataPath + "/roomData/room" + activeRoomIndex.ToString() + ".json");
-            Room loadedRoomData = JsonUtility.FromJson<Room>(jsonData);
+            RoomData loadedRoomData = JsonUtility.FromJson<RoomData>(jsonData);
 
-            if (loadedRoomData.sources.Count == amountOfSpeakers )
+            if (loadedRoomData.sources.Count == amountOfSources )
             {
                 return loadedRoomData;
             }
         }
 
         // Make default room data
-        List<Source> sources = new();
-        for (int i = 0; i < amountOfSpeakers; i++)
+        List<SourceData> sources = new();
+        for (int i = 0; i < amountOfSources; i++)
         {
-            sources.Add(new Source(
+            sources.Add(new SourceData(
                 name: "speaker" + (i + 1).ToString(), 
                 volume: 0.091f, 
                 directMixLevel: 0.2f, 
@@ -66,7 +66,7 @@ public class DataManager : MonoBehaviour
                 distanceAttenuation: 0));
         }
         
-        Room defaultRoom = new("room" + activeRoomIndex.ToString(), activeRoomIndex, sources);    
+        RoomData defaultRoom = new("room" + activeRoomIndex.ToString(), activeRoomIndex, sources);    
         
         // Serialize & write the data
         string defaultRoomJson = JsonUtility.ToJson(defaultRoom, true);
@@ -150,7 +150,18 @@ public class DataManager : MonoBehaviour
                 Directory.CreateDirectory(Application.persistentDataPath + "/systemData/");
             }
 
-            Settings defaultSettings = new(selectedRoomDirectory: Paths.roomsPath, selectedRenderDirectory: "", selectedSOFA: 0, selectedRenderMethod: "OneByOne");
+            Settings defaultSettings = new(
+                selectedRoomDirectory: Paths.roomsPath, 
+                selectedRenderDirectory: "", 
+                selectedSOFA: 0, 
+                selectedRenderMethod: RenderMethod.FullRender.ToString(), 
+                reflectionBounce: 0,
+                lowFreqAbsorption: 0.0f,
+                midFreqAbsorption: 0.0f,
+                highFreqAbsorption: 0.0f,
+                scattering: 0.0f,
+                selectedRenderAmount: 1
+                );
             
             string json = JsonUtility.ToJson(defaultSettings, true);
             File.WriteAllText(persistentPath + "data.json", json);

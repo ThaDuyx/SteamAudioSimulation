@@ -1,7 +1,7 @@
 using SteamAudio;
 using UnityEngine;
 
-public class Speaker
+public class Source
 {
     public AudioSource audioSource;
     public SteamAudioSource steamAudioSource;
@@ -9,7 +9,7 @@ public class Speaker
     public string name;
     public float azimuth, elevation, distanceToReceiver;
 
-    public Speaker(AudioSource audioSource, SteamAudioSource steamAudioSource)
+    public Source(AudioSource audioSource, SteamAudioSource steamAudioSource)
     {
         this.audioSource = audioSource;
         this.steamAudioSource = steamAudioSource;

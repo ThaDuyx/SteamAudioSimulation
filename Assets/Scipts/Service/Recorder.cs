@@ -9,7 +9,7 @@ using UnityEngine;
 public class Recorder
 {
     private readonly int headerSize = 44; // Default for uncompressed wav
-    public bool IsRecording { get; private set;}
+    public bool IsRecording { get; private set; }
     private FileStream fileStream;
     private float[] tempDataSource;
     private readonly int outputSampleRate;
@@ -55,8 +55,7 @@ public class Recorder
 
     private void StartWriting(string name) 
     {
-        fileStream = new FileStream(RenderManager.Instance.dataVM.recordingPath + fileName, FileMode.Create);
-        
+        fileStream = new FileStream(RenderManager.Instance.dataVM.RecordingPath + fileName, FileMode.Create);        
         // fileStream = new FileStream("/Users/duyx/Code/Jabra/python/renders/" + fileName, FileMode.Create);
         // fileStream = new FileStream(Application.persistentDataPath + "/" + fileName, FileMode.Create);
         
@@ -125,7 +124,7 @@ public class Recorder
         string sofaFile = SteamAudioManager.Singleton.ActiveSOFAName();
         string micPairIndicator;
         
-        if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.RenderUser)
+        if (RenderManager.Instance.SelectedRenderMethod == RenderMethod.NearField)
         {
             micPairIndicator = Regex.Replace(sofaFile, "[^0-9]", "")[1..].Insert(1, "_");
         } 

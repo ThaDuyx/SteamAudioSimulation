@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 struct Calculator
@@ -58,9 +57,9 @@ struct Calculator
 
     public static Vector3 CalculateNewPosition()
     {
-        float randomX = UnityEngine.Random.Range(Dimensions.lowerThreshold.x, Dimensions.upperThreshold.x);
-        float randomY = UnityEngine.Random.Range(Dimensions.lowerThreshold.y, Dimensions.upperThreshold.y);
-        float randomZ = UnityEngine.Random.Range(Dimensions.lowerThreshold.z, Dimensions.upperThreshold.z);
+        float randomX = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.x, Dimensions.upperReceiverThreshold.x);
+        float randomY = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.y, Dimensions.upperReceiverThreshold.y);
+        float randomZ = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.z, Dimensions.upperReceiverThreshold.z);
 
         Vector3 newPosition = new(randomX, randomY, randomZ);
 
@@ -69,20 +68,48 @@ struct Calculator
 
     public static int RandomiseIndex()
     {
-        int randomIndex = UnityEngine.Random.Range(0, Paths.amountOfUserConfigPairs);
+        int randomIndex = UnityEngine.Random.Range(0, Constants.amountOfUserConfigPairs);
         
         return randomIndex; 
     }
 
-    public static float CalculateRenderDuration(float duration, int amountOfRenders)
+    public static float RandomiseSourceParameters(float lowerThresholdValue, float upperThresholdValue)
+    {
+        float randomValue = UnityEngine.Random.Range(lowerThresholdValue, upperThresholdValue);
+
+        return randomValue;
+    }
+
+    public static float RandomiseNearFieldParameters(float lowerThresholdValue, float thresholdValue)
+    {
+        float randomValue = UnityEngine.Random.Range(lowerThresholdValue, thresholdValue);
+
+        return randomValue;
+    }
+
+    public static float CalculateRenderDuration(float duration)
     {
         return RenderManager.Instance.SelectedRenderMethod switch
         {
-            RenderMethod.RenderRooms => 2 * duration,
-            RenderMethod.RenderUser => 2 * duration,
+            RenderMethod.FarField => 5 * duration,
+            RenderMethod.NearField => 5 * duration,
+            RenderMethod.FullRender => 5 * duration,
             _ => 0.0f,
         };
     }
+
+    public static float CalculateRenderProgress(float duration, int amountOfRenders)
+    {
+        return RenderManager.Instance.SelectedRenderMethod switch
+        {
+            RenderMethod.FarField => 5 * duration * amountOfRenders,
+            RenderMethod.NearField => 5 * duration,
+            RenderMethod.FullRender => 5 * duration * (amountOfRenders + 1),
+            _ => 0.0f,
+        };
+    }
+
+
 
     private static float CalculateReflectionDistance(Transform receiverTransform, Transform speakerTransform, Transform wallTransform)
     {

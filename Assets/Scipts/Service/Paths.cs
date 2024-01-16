@@ -1,11 +1,14 @@
 using System.IO;
+using UnityEngine;
 struct Paths 
 {
     // Should be modified for specific needs - TODO: Change to dynamic folder structure
     public static string defaultClipName = "sweep_48kHz";
-    public static string folderPath = "/Users/duyx/Code/Jabra/python/renders/";
-    public static string roomsPath = "/Users/duyx/Code/Jabra/python/renders/rooms/";
-    public static int amountOfUserConfigPairs = 11;
+    // public static string folderPath = "/Users/duyx/Code/Jabra/python/renders/";
+    // public static string roomsPath = "/Users/duyx/Code/Jabra/python/renders/rooms/";
+
+    public static string folderPath = Application.persistentDataPath + "/renders/";
+    public static string roomsPath = Application.persistentDataPath + "/renders/rooms/";
 
     public static void SetupDirectories()
     {
