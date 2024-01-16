@@ -1,40 +1,21 @@
-using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using SteamAudio;
+using UnityEngine;
 
 public class DataViewModel
 {
-    private string selectedRenderPath;
-    private string selectedRoomPath;
-    public string RecordingPath { get { return selectedRenderPath; }}
-    public string recordingPath;
-    public int selectedUserIndex;
     public string[] Directories { get { return Directory.GetDirectories(Paths.roomsPath); }}
     public string[] RenderPaths { get { return Directory.GetDirectories(selectedRoomPath); }}
+    public string RecordingPath { get { return selectedRenderPath; }}
+    private string selectedRenderPath, selectedRoomPath;
+    private int selectedUserIndex;
     
     public DataViewModel()
     {
         selectedRoomPath = SettingsManager.Instance.settings.selectedRoomDirectory;
         selectedRenderPath = SettingsManager.Instance.settings.selectedRenderDirectory;
-    }
-    
-    public void SetRecordingPath(RenderMethod renderMethod)
-    {
-        if (renderMethod == RenderMethod.RenderRooms)
-        {
-            recordingPath = selectedRenderPath;
-        }
-        else if (renderMethod == RenderMethod.RenderUser)
-        {
-            recordingPath = selectedRoomPath + "/user" + selectedUserIndex.ToString() + "/";
-        }
-        else 
-        {
-            string timeStamp = DateTime.Now.ToString("ddMM-yy_HHmmss");
-            recordingPath = Paths.folderPath + timeStamp + "/";
-            System.IO.Directory.CreateDirectory(recordingPath);
-        }
     }
 
     public void CreateRootRenderFolder()
@@ -42,6 +23,7 @@ public class DataViewModel
         int folderCount = Directory.GetDirectories(Paths.roomsPath).Length;
         selectedRoomPath = Paths.roomsPath + "render" + folderCount.ToString() + "/";
         System.IO.Directory.CreateDirectory(selectedRoomPath);
+        UnityEngine.Debug.Log(selectedRoomPath);
     }
 
     public void CreateFarFieldRenderFolder(int numberOfRender)

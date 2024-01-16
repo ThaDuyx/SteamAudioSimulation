@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 
 [Serializable]
-public class Room
+public class RoomData
 {
     public string name;
     public int index;
-    public List<Source> sources;
+    public List<SourceData> sources;
 
-    public Room(string name, int index, List<Source> sources) 
+    public RoomData(string name, int index, List<SourceData> sources) 
     {
         this.name = name;
         this.index = index;

@@ -5,31 +5,38 @@ using UnityEngine;
 
 public enum RenderMethod
 {
-   RenderRooms,     // Render all sources together in a room with every individual SOFA files, and different parameters
-   RenderUser       // Render the near field audio source
+   FarField,       // Renders the far field audio source
+   NearField,      // Render the near field audio source
+   FullRender      // Render near and far field audio sources 
 }
+
 public class RenderManager : MonoBehaviour
 {
-    public static RenderManager Instance { get; private set; } // singleton
+    public static RenderManager Instance { get; private set; } // singleton instance
     private readonly List <IRenderObserver> observers = new();
-
-    public SourceViewModel sourceVM;
-    public DataViewModel dataVM;
-    private Recorder recorder;
-    private Timer timer;
     public RenderMethod SelectedRenderMethod { get; private set; }
 
+    public SourceViewModel sourceVM;    // source tasks
+    public DataViewModel dataVM;        // write tasks
+    private Recorder recorder;
+    private Timer timer;
+
     public bool isLastUserIndex = false;
-    private int renderCounter = 0, _amountOfRenders = 0;
+    private int _renderCounter = 0, _nearFieldCounter = 0, _fullRenderAmount = 0, _amountOfRenders = 0;
 
     public bool IsRendering { get; private set; }
-    public bool IsLastFarFieldRender { get { return renderCounter + 1 == AmountOfRenders; }}
-    public float RenderDuration { get { return 6.0f; } private set { RenderDuration = value; } }
-    public bool IsTiming { get { return timer.IsActive; } }
-    public string CurrentTimeLeft { get { return timer.CurrentTime; } }                                   
-    public string TotalTimeLeft { get { return timer.TotalTime; } }
+    public int AmountOfRenders { get { return _amountOfRenders; } set { _amountOfRenders = value + 1; }} // + 1 because an index operator is used that can be 0
+    public int RenderCounter { get { return _renderCounter; }}
+    public float RenderDuration { get { return 6.0f; } private set { RenderDuration = value; }}
+    public int FullRenderAmount { get { return _fullRenderAmount; }}
+    public bool IsLastFarFieldRender { get { return _renderCounter == AmountOfRenders; }}
+    public bool IsTiming { get { return timer.IsActive; }}
+    public float CurrentTimeLeft { get { return timer.CurrentDuration; }}
+    public float InRoomTimeLeft { get { return timer.InRoomDuration; }}
+    public float TotalProgress { get { return timer.TotalDuration; }}
     public string SelectorIndex { get { return sourceVM.GetSelectorIndex(); }}
-    public int AmountOfRenders { get { return _amountOfRenders; } set { _amountOfRenders = value + 1; }} // + 1 because index can be 0
+    public float Progress { get { return (timer.DurationContiner - TotalProgress) / timer.DurationContiner; }}
+
 
     // Basic Unity MonoBehaviour method - Lifecycle process
     private void Awake()
@@ -57,12 +64,12 @@ public class RenderManager : MonoBehaviour
         Dimensions.defaultReceiverLocation = receiver.transform.localPosition;
         
         // initialise speaker list & near field object
-        List<Speaker> farFieldSpeakers = FindFarFieldSpeakers();
-        Speaker nearFieldSpeaker = FindNearFieldSpeaker();
-        Dimensions.defaultSourceLocation = farFieldSpeakers[0].audioSource.transform.localPosition;
+        List<Source> farFieldSources = FindFarFieldSources();
+        Source nearFieldSource = FindNearFieldSource();
+        Dimensions.defaultSourceLocation = farFieldSources[0].audioSource.transform.localPosition;
         
         // construct view models
-        sourceVM = new(speakers: farFieldSpeakers, nearFieldSource: nearFieldSpeaker, receiver: receiver);
+        sourceVM = new(farFieldSources: farFieldSources, nearFieldSource: nearFieldSource, receiver: receiver);
         dataVM = new();
         
         // fetch the previously selected render method on start up
@@ -86,7 +93,7 @@ public class RenderManager : MonoBehaviour
             AmountOfRenders = 1;
         }
         
-        if (SelectedRenderMethod == RenderMethod.RenderRooms)
+        if (SelectedRenderMethod != RenderMethod.NearField)
         {
             dataVM.CreateRootRenderFolder();
         }
@@ -114,44 +121,55 @@ public class RenderManager : MonoBehaviour
 
         switch(SelectedRenderMethod)
         {
-            case RenderMethod.RenderRooms:
-                dataVM.CreateFarFieldRenderFolder(renderCounter);
+            case RenderMethod.FarField:
+                sourceVM.RandomiseSourceParameters();
                 sourceVM.RandomiseSourcePosition();
+                dataVM.CreateFarFieldRenderFolder(_renderCounter);
                 
                 SteamAudioManager.Singleton.currentHRTF++;
                 sourceVM.PlayFarField();
                 break;
                 
-            case RenderMethod.RenderUser:
+            case RenderMethod.NearField:
+                sourceVM.RandomiseNearFieldParameters();
                 dataVM.CreateNearFieldRenderFolder();
-                
-                isLastUserIndex = false;                                    
-                SteamAudioManager.Singleton.currentHRTF = dataVM.FetchUserSOFAIndex(index: 0);
+                isLastUserIndex = false;                    
+                SteamAudioManager.Singleton.currentHRTF = dataVM.FetchUserSOFAIndex(index: _nearFieldCounter);
                 sourceVM.PlayNearField();
+                break;
+
+            case RenderMethod.FullRender:
+                sourceVM.RandomiseSourceParameters();
+                sourceVM.RandomiseSourcePosition();
+                dataVM.CreateFarFieldRenderFolder(_renderCounter);
+                _fullRenderAmount = 1 + AmountOfRenders;
+                
+                SteamAudioManager.Singleton.currentHRTF++;
+                sourceVM.PlayFarField();
                 break;
 
             default: break;
         }
 
         recorder.ToggleRecording();
-        timer.Begin(RenderDuration);  
+        timer.SetTo(RenderDuration, AmountOfRenders);
     }
 
     // Updates the state to continue rendering with the next HRTF in the list
     public void ContinueRender()
     {
-        recorder.ToggleRecording();
+        recorder.ToggleRecording(); // stop previous recording
 
         switch(SelectedRenderMethod)
         {
-            case RenderMethod.RenderRooms:
+            case RenderMethod.FarField: case RenderMethod.FullRender:
                 SteamAudioManager.Singleton.currentHRTF++;
                 sourceVM.PlayFarField();
                 break;
 
-            case RenderMethod.RenderUser:
-                SteamAudioManager.Singleton.currentHRTF = dataVM.FetchUserSOFAIndex(index: 1);
-                isLastUserIndex = true;
+            case RenderMethod.NearField:
+                SteamAudioManager.Singleton.currentHRTF = dataVM.FetchUserSOFAIndex(index: _nearFieldCounter);
+                // isLastUserIndex = true;
                 sourceVM.PlayNearField();
                 break;
 
@@ -159,13 +177,13 @@ public class RenderManager : MonoBehaviour
         }
 
         recorder.ToggleRecording();
-        timer.Begin(RenderDuration);
+        timer.SetTo(RenderDuration, AmountOfRenders);
     }
 
     // Stop rendering process
     public void StopRender()
     {
-        IsRendering = false;
+        // IsRendering = false;
         timer.Stop();
         recorder.StopRecording();
 
@@ -176,18 +194,21 @@ public class RenderManager : MonoBehaviour
 
         switch (SelectedRenderMethod)
         {
-            case RenderMethod.RenderRooms:
+            case RenderMethod.FarField: case RenderMethod.FullRender:
             {
                 sourceVM.CalculateGeometry();
-                SteamAudioManager.Singleton.currentHRTF = 0;       
-                Logger.Log(speaker: sourceVM.Speaker);
+                SteamAudioManager.Singleton.currentHRTF = 0;
+                Logger.Log(source: sourceVM.FarFieldSource);
                 break;
             }
 
-            case RenderMethod.RenderUser:
+            case RenderMethod.NearField:
             {
+                timer.ResetProgress();
                 SteamAudioManager.Singleton.currentHRTF = 0;
-                Logger.Log(speaker: sourceVM.nearFieldSource);
+                Logger.Log(source: sourceVM.NearFieldSource);
+                _nearFieldCounter = 0;
+                IsRendering = false;
                 break;
             }
 
@@ -195,29 +216,30 @@ public class RenderManager : MonoBehaviour
         }
     }
 
+    // will be called everytime the timer ends a render duration
     private void HandleRenderProgress()
     {
         switch (SelectedRenderMethod)
         {
-            case RenderMethod.RenderRooms:
+            case RenderMethod.FarField: case RenderMethod.FullRender:
             {
-                HandleRenderRooms();
+                HandleFarField();
                 break;
             }
 
-            case RenderMethod.RenderUser:
+            case RenderMethod.NearField:
             {
-                HandleRenderUser();
+                HandleNearField();
                 break;
             }
 
             default: break;
         }
 
-        NotifyObservers();
+        NotifyObservers(); // update view
     }
 
-    private void HandleRenderRooms()
+    private void HandleFarField()
     {
         if (!SteamAudioManager.Singleton.IsLastSOFA())
         {
@@ -227,39 +249,46 @@ public class RenderManager : MonoBehaviour
         {
             StopRender();
 
-            HandleCompletionOfRoomsRenders();
+            HandleFarFieldCompletion();
         }
     }
 
     // used when far field renders are complete
-    private void HandleCompletionOfRoomsRenders()
+    private void HandleFarFieldCompletion()
     {
-        renderCounter++;
+        _renderCounter++;
         
         if (!IsLastFarFieldRender)
         {
-            // sourceVM.UpdateSelectedSpeaker();
             dataVM.UpdateRenderPath();
             StartRender();
         }
         else if (IsLastFarFieldRender)
         {
-            renderCounter = 0;
-            SelectedRenderMethod = RenderMethod.RenderUser;
-            StartRender();
+            if (SelectedRenderMethod == RenderMethod.FullRender)
+            {
+                
+                SelectedRenderMethod = RenderMethod.NearField;
+                StartRender();
+                _fullRenderAmount = 1;
+            }
+            _renderCounter = 0;
         }
     }
 
     // used to render near field source
-    private void HandleRenderUser()
+    private void HandleNearField()
     {
-        if (!isLastUserIndex)
+        _nearFieldCounter++;
+        if (_nearFieldCounter != 5)
         {
+            
             ContinueRender();
         } 
-        else if (isLastUserIndex)
+        else if (_nearFieldCounter == 5)
         {
             StopRender();
+            NotifyCompletion();
         }
     }
 
@@ -280,6 +309,7 @@ public class RenderManager : MonoBehaviour
         }
     }
 
+    // Observer pattern methods
     public void AddObserver(IRenderObserver observer)
     {
         if (!observers.Contains(observer))
@@ -295,16 +325,18 @@ public class RenderManager : MonoBehaviour
 
     private void NotifyObservers()
     {
-        foreach (var observer in observers)
-        {
-            observer.OnNotify();
-        }
+        observers.ForEach(observer => observer.OnNotify());
     }
 
-    public List<Speaker> FindFarFieldSpeakers() {
+    private void NotifyCompletion()
+    {
+        observers.ForEach(observer => observer.RenderComplete());
+    }
+
+    public List<Source> FindFarFieldSources() {
         // Fetch audio objects in scene
         AudioSource[] audioSources = FindObjectsOfType<AudioSource>();
-        List<Speaker> foundSpeakers = new();
+        List<Source> sourcesInScene = new();
 
         // iterate source and pair them in a speaker model
         foreach (var audioSource in audioSources)
@@ -314,24 +346,35 @@ public class RenderManager : MonoBehaviour
 
             // retrieve the steamAudioSource associated with the respective audioSource object
             SteamAudioSource steamSource = audioSource.gameObject.GetComponent<SteamAudioSource>();
-            Speaker speaker = new(audioSource, steamSource);
+            Source farFieldSource = new(audioSource, steamSource);
             // load default clip
-            speaker.audioSource.clip = Resources.Load<AudioClip>("Audio/" + Paths.defaultClipName);
-            foundSpeakers.Add(speaker);
+            farFieldSource.audioSource.clip = Resources.Load<AudioClip>("Audio/" + Paths.defaultClipName);
+            sourcesInScene.Add(farFieldSource);
         }
         
         // sort speakers by name
-        foundSpeakers.Sort((speaker1, speaker2) => speaker1.name.CompareTo(speaker2.name));
-        return foundSpeakers;
+        sourcesInScene.Sort((source1, source2) => source1.name.CompareTo(source2.name));
+        return sourcesInScene;
     }
 
-    public Speaker FindNearFieldSpeaker()
+    public Source FindNearFieldSource()
     {
         GameObject gameObject = GameObject.FindGameObjectWithTag("nearField");
         AudioSource nearFieldAudioSource = gameObject.GetComponent<AudioSource>();
         SteamAudioSource nearFieldSteamSource = gameObject.GetComponent<SteamAudioSource>();
-        Speaker nearFieldSpeaker = new(audioSource: nearFieldAudioSource, steamAudioSource: nearFieldSteamSource);
+        Source nearFieldSource = new(audioSource: nearFieldAudioSource, steamAudioSource: nearFieldSteamSource);
         
-        return nearFieldSpeaker;   
+        return nearFieldSource;   
+    }
+
+    public string FetchRenderProgress()
+    {
+        return SelectedRenderMethod switch
+        {
+            RenderMethod.FarField => (AmountOfRenders - RenderCounter).ToString(),
+            RenderMethod.NearField => "1",
+            RenderMethod.FullRender => (FullRenderAmount - RenderCounter).ToString(),
+            _ => "1",
+        };
     }
 }

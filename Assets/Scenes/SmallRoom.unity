@@ -2663,7 +2663,7 @@ MonoBehaviour:
   hybridReverbEQMid: 1
   hybridReverbEQHigh: 1
   hybridReverbDelay: 0
-  applyHRTFToReflections: 1
+  applyHRTFToReflections: 0
   reflectionsMixLevel: 0.74
   pathing: 0
   pathingProbeBatch: {fileID: 0}
@@ -2748,7 +2748,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -5352,9 +5352,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings:
     selectedSOFA: 0
+    reflectionBounce: 0
     selectedRoomDirectory: 
     selectedRenderDirectory: 
     selectedRenderMethod: 
+    lowFreqAbsorption: 0
+    midFreqAbsorption: 0
+    highFreqAbsorption: 0
+    scattering: 0
 --- !u!1 &1761682723
 GameObject:
   m_ObjectHideFlags: 0

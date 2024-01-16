@@ -19,7 +19,7 @@ struct Calculator
         {
             // Pythagoras: b = sqrt(c^2 - a^2)
             float a = Mathf.Abs(receiverTransform.position.y - speakerTransform.position.y);
-            float c = UnityEngine.Vector3.Distance(receiverTransform.position, speakerTransform.position);
+            float c = Vector3.Distance(receiverTransform.position, speakerTransform.position);
             float b = Mathf.Sqrt(Mathf.Pow(c, 2) - Mathf.Pow(a, 2));
             
             return  b;
@@ -29,7 +29,7 @@ struct Calculator
     public static float CalculateAzimuth(Transform receiverTransform, Transform speakerTransform)
     {
         // Retrieving the direction vector of the receiver
-        UnityEngine.Vector3 direction = speakerTransform.position - receiverTransform.position;
+        Vector3 direction = speakerTransform.position - receiverTransform.position;
 
         // Calculating azimuth: atan(x0/z0)
         float azimuth = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
@@ -42,7 +42,7 @@ struct Calculator
     public static float CalculateElevation(Transform receiverTransform, Transform speakerTransform)
     {
         // Retrieving the direction vector of the receiver
-        UnityEngine.Vector3 direction = speakerTransform.position - receiverTransform.position;
+        Vector3 direction = speakerTransform.position - receiverTransform.position;
 
         // Calculating distance by: sqrt(x^2 + z^2)
         float distance = (float)Math.Sqrt(Math.Pow(direction.x, 2) + (float)Math.Pow(direction.z, 2));
@@ -55,13 +55,13 @@ struct Calculator
         return elevation;
     }
 
-    public static UnityEngine.Vector3 CalculateNewPosition()
+    public static Vector3 CalculateNewPosition()
     {
         float randomX = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.x, Dimensions.upperReceiverThreshold.x);
         float randomY = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.y, Dimensions.upperReceiverThreshold.y);
         float randomZ = UnityEngine.Random.Range(Dimensions.lowerReceiverThreshold.z, Dimensions.upperReceiverThreshold.z);
 
-        UnityEngine.Vector3 newPosition = new(randomX, randomY, randomZ);
+        Vector3 newPosition = new(randomX, randomY, randomZ);
 
         return newPosition;
     }
@@ -73,15 +73,43 @@ struct Calculator
         return randomIndex; 
     }
 
-    public static float CalculateRenderDuration(float duration, int amountOfRenders)
+    public static float RandomiseSourceParameters(float lowerThresholdValue, float upperThresholdValue)
+    {
+        float randomValue = UnityEngine.Random.Range(lowerThresholdValue, upperThresholdValue);
+
+        return randomValue;
+    }
+
+    public static float RandomiseNearFieldParameters(float lowerThresholdValue, float thresholdValue)
+    {
+        float randomValue = UnityEngine.Random.Range(lowerThresholdValue, thresholdValue);
+
+        return randomValue;
+    }
+
+    public static float CalculateRenderDuration(float duration)
     {
         return RenderManager.Instance.SelectedRenderMethod switch
         {
-            RenderMethod.RenderRooms => 2 * duration,
-            RenderMethod.RenderUser => 2 * duration,
+            RenderMethod.FarField => 5 * duration,
+            RenderMethod.NearField => 5 * duration,
+            RenderMethod.FullRender => 5 * duration,
             _ => 0.0f,
         };
     }
+
+    public static float CalculateRenderProgress(float duration, int amountOfRenders)
+    {
+        return RenderManager.Instance.SelectedRenderMethod switch
+        {
+            RenderMethod.FarField => 5 * duration * amountOfRenders,
+            RenderMethod.NearField => 5 * duration,
+            RenderMethod.FullRender => 5 * duration * (amountOfRenders + 1),
+            _ => 0.0f,
+        };
+    }
+
+
 
     private static float CalculateReflectionDistance(Transform receiverTransform, Transform speakerTransform, Transform wallTransform)
     {

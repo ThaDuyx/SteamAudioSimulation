@@ -7,12 +7,13 @@ using UnityEngine.UI;
 
 public class RenderView : MonoBehaviour, IRenderObserver
 {
-    [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, simulationDurationText;
+    [SerializeField] private TMP_Text timerText, currentSOFAText, sampleRateText, totalTimeText, rendersLeftText, stateText, progressText;
     [SerializeField] private TMP_Dropdown audioClipDropdown, speakerDropdown, renderMethodDropdown, roomDropdown, sofaFileDropdown, renderAmountDropdown;
-    [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider;
+    [SerializeField] private Slider bounceSlider, volumeSlider, directMixLevelSlider, reflectionMixLevelSlider, progressSlider;
     [SerializeField] private Slider lowFreqAbsorpSlider, midFreqAbsorpSlider, highFreqAbsorpSlider, scatteringSlider;
     [SerializeField] private Toggle applyReflToHRTFToggle, distAttenuationToggle, airAbsorptionToggle;
-    [SerializeField] private TMP_InputField roomsInputField;
+    [SerializeField] private Button renderBtn;
+    private float currentVelocity = 0.0f; // progress slider
 
     // Basic Unity MonoBehaviour method - Essentially a start-up function
     void Start()
@@ -27,7 +28,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
     {
         HandleKeyStrokes();
         
-        HandleRender();
+        HandleRenderState();
     }
 
     // Observer notification method
@@ -36,12 +37,19 @@ public class RenderView : MonoBehaviour, IRenderObserver
         SetUI();
     }
 
+    public void RenderComplete()
+    {
+        progressSlider.gameObject.SetActive(false);
+        progressSlider.value = 0;
+    }
+
     // Method for handling whenever specific keys are pressed on the keyboard.
     private void HandleKeyStrokes()
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
             RenderManager.Instance.ToggleRender();
+
             SetUI();
         }
 
@@ -52,13 +60,18 @@ public class RenderView : MonoBehaviour, IRenderObserver
     }
 
     // Called in the Update() MonoBehavior method
-    private void HandleRender()
+    private void HandleRenderState()
     {
-        if (RenderManager.Instance.IsTiming && RenderManager.Instance.IsRendering)
+        if (RenderManager.Instance.IsRendering)
         {
-            // Update time while rendering
-            timerText.text = "Time left: " + RenderManager.Instance.CurrentTimeLeft + "s";
-            simulationDurationText.text = "Time left: " + RenderManager.Instance.TotalTimeLeft + "s";
+            stateText.text = "Rendering";
+            timerText.text = RenderManager.Instance.CurrentTimeLeft + "s";
+            totalTimeText.text = RenderManager.Instance.InRoomTimeLeft + "s";
+            progressText.text = RenderManager.Instance.TotalProgress + "s";
+            rendersLeftText.text = RenderManager.Instance.FetchRenderProgress();
+            
+            float currentProgress = Mathf.SmoothDamp(progressSlider.value, RenderManager.Instance.Progress, ref currentVelocity, 100 * Time.deltaTime);
+            progressSlider.value = currentProgress;
         }
     }
 
@@ -68,7 +81,7 @@ public class RenderView : MonoBehaviour, IRenderObserver
 
         // feed dropdowns with data
         speakerDropdown.options.Clear();
-        foreach (string speakerName in RenderManager.Instance.sourceVM.GetSpeakerNames())
+        foreach (string speakerName in RenderManager.Instance.sourceVM.GetSourceNames())
         {
             speakerDropdown.options.Add(new TMP_Dropdown.OptionData() { text = speakerName });
         }
@@ -97,8 +110,17 @@ public class RenderView : MonoBehaviour, IRenderObserver
         {
             renderMethodDropdown.options.Add(new TMP_Dropdown.OptionData() { text = method });
         }
-        renderMethodDropdown.RefreshShownValue();
 
+        renderMethodDropdown.options.ForEach(option => 
+        {
+            if (SettingsManager.Instance.settings.selectedRenderMethod == option.text)
+            {
+                renderMethodDropdown.value = renderMethodDropdown.options.IndexOf(option);
+            }
+        });
+        renderMethodDropdown.RefreshShownValue();
+        
+        
         sofaFileDropdown.options.Clear();
         foreach (string sofaFile in SteamAudioManager.Singleton.hrtfNames)
         {
@@ -107,11 +129,12 @@ public class RenderView : MonoBehaviour, IRenderObserver
         sofaFileDropdown.RefreshShownValue();
 
         renderAmountDropdown.options.Clear();
-        for (int i = 1; i < Constants.renderAmountAllowed; i++) 
+        for (int i = 1; i <= Constants.renderAmountAllowed; i++) 
         {
             renderAmountDropdown.options.Add(new TMP_Dropdown.OptionData() { text = i.ToString() });
         }
         renderAmountDropdown.RefreshShownValue();
+        renderAmountDropdown.value = SettingsManager.Instance.settings.selectedRenderAmount - 1;
 
         bounceSlider.value = SettingsManager.Instance.settings.reflectionBounce;
         SteamAudioSettings.Singleton.realTimeBounces = SettingsManager.Instance.settings.reflectionBounce;
@@ -146,15 +169,21 @@ public class RenderView : MonoBehaviour, IRenderObserver
     // Updates elements in the UI
     private void SetUI()
     {
-        timerText.text = "Press T";
+        stateText.text = "Idle";
+        
+        timerText.text = "Idle";
 
-        simulationDurationText.text = "Idle state";
+        totalTimeText.text = "Idle";
+
+        progressText.text = "Idle";
+
+        rendersLeftText.text = "Idle";
 
         currentSOFAText.text = SteamAudioManager.Singleton.ActiveSOFAName();
 
-        sampleRateText.text = "fs: " + UnityEngine.AudioSettings.outputSampleRate.ToString();
+        sampleRateText.text = UnityEngine.AudioSettings.outputSampleRate.ToString();
 
-        applyReflToHRTFToggle.isOn = RenderManager.Instance.sourceVM.ApplyHRTFToReflections;
+        renderBtn.GetComponentInChildren<TMP_Text>().text = RenderManager.Instance.IsRendering ? "Stop Render" : "Start Render";
 
         audioClipDropdown.options.ForEach(option => 
         {
@@ -164,11 +193,28 @@ public class RenderView : MonoBehaviour, IRenderObserver
             } 
         });
         audioClipDropdown.RefreshShownValue();
+
+        volumeSlider.value = RenderManager.Instance.SelectedRenderMethod == RenderMethod.NearField ? RenderManager.Instance.sourceVM.NearFieldSource.audioSource.volume : RenderManager.Instance.sourceVM.Volume;
+        volumeSlider.GetComponentInChildren<TMP_Text>().text = volumeSlider.value.ToString("F2");
+        directMixLevelSlider.value = RenderManager.Instance.SelectedRenderMethod == RenderMethod.NearField ? RenderManager.Instance.sourceVM.NearFieldSource.steamAudioSource.directMixLevel : RenderManager.Instance.sourceVM.DirectMixLevel;
+        directMixLevelSlider.GetComponentInChildren<TMP_Text>().text = directMixLevelSlider.value.ToString("F2");
+        reflectionMixLevelSlider.value = RenderManager.Instance.SelectedRenderMethod == RenderMethod.NearField ? RenderManager.Instance.sourceVM.NearFieldSource.steamAudioSource.reflectionsMixLevel : RenderManager.Instance.sourceVM.ReflectionMixLevel;
+        reflectionMixLevelSlider.GetComponentInChildren<TMP_Text>().text = reflectionMixLevelSlider.value.ToString("F2");
+
+        applyReflToHRTFToggle.isOn = RenderManager.Instance.sourceVM.ApplyHRTFToReflections;
+    }
+
+    public void RenderBtnPressed()
+    {
+        RenderManager.Instance.ToggleRender();
+        renderBtn.GetComponentInChildren<TMP_Text>().text = RenderManager.Instance.IsRendering ? "Stop Render" : "Start Render";
+        progressSlider.gameObject.SetActive(true);
+        SetUI();
     }
 
     public void SpeakerDropdownChanged(int index)
     {
-        RenderManager.Instance.sourceVM.SetSelectedSpeaker(index);
+        RenderManager.Instance.sourceVM.SetSelectedSource(index);
         SetUI();
     }
 
@@ -271,18 +317,6 @@ public class RenderView : MonoBehaviour, IRenderObserver
         RenderManager.Instance.SetRenderMethod(renderMethod: (RenderMethod)index);
     }
 
-    public void RoomsInputFieldChanged(string input)
-    {
-        if (int.TryParse(input, out int amountOfRooms) && amountOfRooms < 20)
-        {
-            // TODO: Enter amount of rooms added in for rendering
-        }
-        else
-        {
-            Console.WriteLine("The string is not a valid integer or too high of a value");
-        }
-    }
-
     public void RoomDropdownChanged(int index)
     {
         // Plus one since we're ignoring the first scene being the Canvas UI
@@ -295,6 +329,9 @@ public class RenderView : MonoBehaviour, IRenderObserver
     public void RenderAmountDropdownChanged(int index)
     {
         RenderManager.Instance.AmountOfRenders = index;
+        SettingsManager.Instance.settings.selectedRenderAmount = index + 1;
+        SettingsManager.Instance.Save();
+        SetUI();
     }
 
     // callback function used to wait while managers are loading whenever we change scene
