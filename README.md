@@ -1,4 +1,4 @@
-# GN-ratr
+# GNratr
 
 ## Description
 This project aims to create a simulation system in Unity, utilising the Steam Audio plugin, for generating multichannel spatial audio data. The primary objective is to assess the effectiveness of spatial audio processing software in strengthening speech-enhancing machine learning algorithms. High-quality audio recordings from diverse environments are essential for training algorithms to improve the clarity of noisy speech signals. However, obtaining a comprehensive database of such recordings is time-intensive. To address this challenge, the project proposes a simulation approach using software to generate these recordings, potentially streamlining the process. The simulation employs a virtual microphone in Unity to produce audio in various simulated acoustical spaces. The quality of the simulated audio renders will be evaluated by com- paring them with real-life equivalents.
